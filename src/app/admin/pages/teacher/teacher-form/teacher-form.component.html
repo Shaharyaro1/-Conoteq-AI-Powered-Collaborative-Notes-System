@@ -1,0 +1,134 @@
+<div class="teacher-form-container">
+  <div class="form-header">
+    <h2>{{ isEditMode ? 'Edit Teacher' : 'Add New Teacher' }}</h2>
+    <button class="btn-close" (click)="closeForm()">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+  </div>
+
+  <form class="teacher-form" (ngSubmit)="onSubmit()">
+    <!-- Profile Picture Upload -->
+    <div class="form-group profile-section">
+      <label class="form-label">Profile Picture</label>
+      <div class="profile-upload">
+        <div class="profile-preview">
+          <img [src]="profilePreview" alt="Profile" class="profile-image">
+          <div class="upload-overlay" (click)="fileInput.click()">
+            <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+              <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+            </svg>
+            <span>Upload Photo</span>
+          </div>
+        </div>
+        <input 
+          #fileInput
+          type="file" 
+          accept="image/*" 
+          (change)="onFileSelected($event)"
+          style="display: none;">
+      </div>
+    </div>
+
+    <!-- Teacher Name -->
+    <div class="form-group">
+      <label class="form-label" for="teacherName">
+        Teacher Name <span class="required">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="teacherName" 
+        class="form-input"
+        [(ngModel)]="teacher.name"
+        name="teacherName"
+        placeholder="Enter teacher name (letters only)"
+        (input)="onNameInput($event)"
+        (keypress)="validateNameInput($event)"
+        required>
+      <div class="validation-message success" *ngIf="teacher.name">
+        ✓ Name looks good!
+      </div>
+    </div>
+
+    <!-- Qualification -->
+    <div class="form-group">
+      <label class="form-label" for="qualification">
+        Qualification <span class="required">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="qualification" 
+        class="form-input"
+        [(ngModel)]="teacher.qualification"
+        name="qualification"
+        placeholder="e.g., M.Sc, PhD in Computer Science"
+        required>
+    </div>
+
+    <!-- Subject -->
+    <div class="form-group">
+      <label class="form-label" for="subject">
+        Subject <span class="required">*</span>
+      </label>
+      <select 
+        id="subject" 
+        class="form-input"
+        [(ngModel)]="teacher.subject"
+        name="subject"
+        required>
+        <option value="" disabled selected>Select subject</option>
+        <option value="Mathematics">Mathematics</option>
+        <option value="Physics">Physics</option>
+        <option value="Chemistry">Chemistry</option>
+        <option value="Biology">Biology</option>
+        <option value="Computer Science">Computer Science</option>
+        <option value="English">English</option>
+        <option value="Urdu">Urdu</option>
+        <option value="Islamic Studies">Islamic Studies</option>
+        <option value="Pakistan Studies">Pakistan Studies</option>
+        <option value="Economics">Economics</option>
+        <option value="Accounting">Accounting</option>
+        <option value="Business Studies">Business Studies</option>
+      </select>
+    </div>
+
+    <!-- Email -->
+    <div class="form-group">
+      <label class="form-label" for="email">
+        Email <span class="required">*</span>
+      </label>
+      <div class="email-input-container">
+        <input 
+          type="text" 
+          id="email" 
+          class="form-input email-input"
+          [(ngModel)]="emailUsername"
+          name="email"
+          placeholder="Enter username"
+          (input)="onEmailInput()"
+          required>
+        <span class="email-suffix">&#64;gmail.com</span>
+      </div>
+      <div class="validation-message success" *ngIf="emailUsername">
+        ✓ Email: {{ emailUsername }}&#64;gmail.com
+      </div>
+    </div>
+
+
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="closeForm()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+        </svg>
+        {{ isEditMode ? 'Update Teacher' : 'Add Teacher' }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,173 @@
+.theme-container {
+  padding: 2rem;
+}
+
+h1 {
+  color: #1f2937;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.theme-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.theme-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.theme-header h2 {
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.theme-header p {
+  color: #6b7280;
+  margin: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d1d5db;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #7c3aed;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.theme-preview {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.preview-box {
+  width: 100%;
+  max-width: 500px;
+  height: 300px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.preview-box.dark {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.preview-header {
+  height: 50px;
+  background: #7c3aed;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 1rem;
+}
+
+.preview-circle {
+  width: 30px;
+  height: 30px;
+  background: white;
+  border-radius: 50%;
+}
+
+.preview-line {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+}
+
+.preview-content {
+  display: flex;
+  height: calc(100% - 50px);
+}
+
+.preview-sidebar {
+  width: 80px;
+  background: #7c3aed;
+}
+
+.preview-main {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preview-box:not(.dark) .preview-main {
+  background: #f9fafb;
+}
+
+.preview-card {
+  height: 60px;
+  background: white;
+  border-radius: 8px;
+}
+
+.preview-box.dark .preview-card {
+  background: #374151;
+}
+
+.theme-info {
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.theme-info h3 {
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+}
+
+.theme-info p {
+  color: #6b7280;
+  margin: 0;
+}

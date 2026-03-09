@@ -1,0 +1,304 @@
+<div class="teacher-container">
+  <div class="header-section">
+    <div class="header-left">
+      <h1>Manage Teachers</h1>
+    </div>
+    
+    <div class="header-right">
+      <div class="search-container">
+        <div class="search-box">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+          <input 
+            type="text" 
+            placeholder="Search teachers..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearch()"
+            class="search-input">
+          <button 
+            *ngIf="searchTerm" 
+            class="clear-search" 
+            (click)="clearSearch()"
+            title="Clear search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <button class="btn-add-teacher" (click)="openAddForm()">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+        </svg>
+        Add New Teacher
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Results Info -->
+  <div class="search-results-info" *ngIf="searchTerm">
+    <span>{{ filteredTeachers.length }} teacher(s) found for "{{ searchTerm }}"</span>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ teachers.length }}</div>
+        <div class="stat-label">Total Teachers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Form Modal -->
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeFormModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <app-teacher-form
+        [isEditMode]="isEditMode"
+        [teacherData]="selectedTeacher"
+        (formSubmit)="onFormSubmit($event)"
+        (formClose)="closeFormModal()">
+      </app-teacher-form>
+    </div>
+  </div>
+
+  <!-- Teacher Notes Modal -->
+  <div class="modal-overlay" *ngIf="showNotesModal" (click)="closeNotesModal()">
+    <div class="modal-content notes-modal" (click)="$event.stopPropagation()">
+      <div class="modal-content-wrapper">
+        <div class="notes-modal-header">
+        <div class="teacher-info">
+          <img 
+            [src]="selectedTeacher ? getTeacherAvatar(selectedTeacher) : ''" 
+            [alt]="selectedTeacher?.name" 
+            class="teacher-avatar"
+            (error)="selectedTeacher && onImageError($event, selectedTeacher)">
+          <div>
+            <h2>{{ selectedTeacher?.name }} - Notes</h2>
+            <p>{{ selectedTeacher?.subject }}</p>
+          </div>
+        </div>
+        <button class="btn-close" (click)="closeNotesModal()" type="button">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-scrollable-content">
+        <!-- Upload Notes Form -->
+        <div class="upload-section">
+        <h3>Upload New Notes</h3>
+        <form class="upload-form" (ngSubmit)="uploadTeacherNotes()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Notes Title</label>
+              <input 
+                type="text" 
+                [(ngModel)]="newNote.title"
+                name="title"
+                placeholder="Enter notes title"
+                required>
+            </div>
+            <div class="form-group">
+              <label>Chapter/Topic</label>
+              <input 
+                type="text" 
+                [(ngModel)]="newNote.chapter"
+                name="chapter"
+                placeholder="e.g., Chapter 1, Algebra">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Select File</label>
+            <input 
+              type="file" 
+              (change)="onNotesFileSelected($event)"
+              accept=".pdf,.doc,.docx,.ppt,.pptx"
+              required>
+          </div>
+          <button type="submit" class="btn-upload" [disabled]="!selectedNotesFile">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+              <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+            </svg>
+            Upload Notes
+          </button>
+        </form>
+      </div>
+
+      <!-- Notes Table -->
+      <div class="notes-table-section">
+        <h3>Uploaded Notes ({{ getTeacherNotes().length }})</h3>
+        <div class="notes-table-wrapper">
+          <table class="notes-table" *ngIf="getTeacherNotes().length > 0">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Chapter</th>
+                <th>File Name</th>
+                <th>Size</th>
+                <th>Upload Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let note of getTeacherNotes()">
+                <td><strong>{{ note.title }}</strong></td>
+                <td>{{ note.chapter || 'N/A' }}</td>
+                <td>
+                  <div class="file-info">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                    </svg>
+                    {{ note.fileName }}
+                  </div>
+                </td>
+                <td>{{ note.fileSize }}</td>
+                <td>{{ note.uploadDate }}</td>
+                <td>
+                  <div class="note-actions">
+                    <button 
+                      class="btn-action btn-view" 
+                      (click)="viewTeacherNote(note)"
+                      title="View Notes">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                      </svg>
+                    </button>
+                    <button 
+                      class="btn-action btn-download" 
+                      (click)="downloadTeacherNote(note)"
+                      title="Download">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                      </svg>
+                    </button>
+                    <button 
+                      class="btn-action btn-delete" 
+                      (click)="deleteTeacherNote(note)"
+                      title="Delete">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="getTeacherNotes().length === 0" class="empty-notes">
+            <svg width="48" height="48" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+            </svg>
+            <p>No notes uploaded yet for this teacher</p>
+          </div>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Teachers Table -->
+  <div class="teachers-table-card">
+
+    <div class="table-wrapper">
+      <table class="teachers-table">
+        <thead>
+          <tr>
+            <th>Profile</th>
+            <th>Name</th>
+            <th>Qualification</th>
+            <th>Subject</th>
+            <th>Email</th>
+            <th>Visibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let teacher of paginatedTeachers">
+            <td>
+              <div class="teacher-profile">
+                <img 
+                  [src]="getTeacherAvatar(teacher)" 
+                  [alt]="teacher.name" 
+                  class="profile-img"
+                  (error)="onImageError($event, teacher)">
+              </div>
+            </td>
+            <td><strong>{{ teacher.name }}</strong></td>
+            <td>{{ teacher.qualification }}</td>
+            <td>
+              <span class="subject-badge">{{ teacher.subject }}</span>
+            </td>
+            <td>{{ teacher.email }}</td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  class="btn-action btn-notes" 
+                  (click)="viewTeacherNotes(teacher)"
+                  title="View Notes">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                  </svg>
+                </button>
+                <button 
+                  class="btn-action btn-edit" 
+                  (click)="editTeacher(teacher)"
+                  title="Edit">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                  </svg>
+                </button>
+                <button 
+                  class="btn-action btn-delete" 
+                  (click)="deleteTeacher(teacher)"
+                  title="Delete">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="filteredTeachers.length === 0" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- Material Paginator -->
+    <div class="paginator-container" *ngIf="filteredTeachers.length > 0">
+      <mat-paginator 
+        [length]="totalItems"
+        [pageSize]="pageSize"
+        [pageIndex]="pageIndex"
+        [pageSizeOptions]="[5, 10, 15, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+        class="teachers-paginator">
+      </mat-paginator>
+    </div>
+  </div>
+</div>
+
+
+

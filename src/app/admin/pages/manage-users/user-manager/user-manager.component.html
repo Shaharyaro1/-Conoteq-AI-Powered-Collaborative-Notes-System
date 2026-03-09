@@ -1,0 +1,206 @@
+<div class="user-manager-container">
+  <!-- Header -->
+  <div class="header">
+    <h2>User Manager</h2>
+    <button class="btn btn-primary" (click)="openAddUserModal()">
+      <i class="fas fa-plus"></i>
+      Add New User
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Search by username or email..."
+        [(ngModel)]="searchTerm"
+        (input)="filterUsers()"
+        class="form-control">
+      <i class="fas fa-search"></i>
+    </div>
+    
+    <div class="filter-group">
+      <select [(ngModel)]="selectedRole" (change)="filterUsers()" class="form-select">
+        <option value="all">All Roles</option>
+        <option value="admin">Admin</option>
+        <option value="user">User</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <select [(ngModel)]="selectedStatus" (change)="filterUsers()" class="form-select">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="blocked">Blocked</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Password</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Join Date</th>
+          <th>Last Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of paginatedUsers" class="user-row">
+          <td>{{ user.username }}</td>
+          <td>{{ user.email }}</td>
+          <td class="password-cell">
+            <span *ngIf="!user.showPassword" class="password-hidden">••••••••</span>
+            <span *ngIf="user.showPassword" class="password-visible">{{ user.password }}</span>
+            <button 
+              class="btn-icon" 
+              (click)="togglePasswordVisibility(user)"
+              [title]="user.showPassword ? 'Hide Password' : 'Show Password'">
+              <i class="fas" [ngClass]="user.showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+          </td>
+          <td>
+            <span class="role-badge" [ngClass]="'role-' + user.role">
+              {{ user.role === 'admin' ? 'Admin' : 'User' }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="'status-' + user.status">
+              <i class="fas" [ngClass]="user.status === 'active' ? 'fa-circle' : 'fa-circle'"></i>
+              {{ user.status === 'active' ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>{{ user.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ user.lastActive | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-outline" (click)="openEditUserModal(user)" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button 
+              class="btn btn-sm" 
+              [ngClass]="user.status === 'active' ? 'btn-warning' : 'btn-success'"
+              (click)="toggleUserStatus(user)" 
+              [title]="user.status === 'active' ? 'Deactivate' : 'Activate'">
+              <i class="fas" [ngClass]="user.status === 'active' ? 'fa-pause' : 'fa-play'"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id)" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredUsers.length === 0" class="no-users">
+      <p>No users found</p>
+    </div>
+  </div>
+
+  <!-- Material Paginator -->
+  <mat-paginator 
+    *ngIf="filteredUsers.length > 0"
+    [length]="totalItems"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="pageSizeOptions"
+    [pageIndex]="pageIndex"
+    (page)="onPageChange($event)"
+    showFirstLastButtons
+    class="mat-paginator-custom">
+  </mat-paginator>
+
+  <!-- Add User Modal -->
+  <div class="modal" [class.show]="showAddUserModal" *ngIf="showAddUserModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add New User</h3>
+        <button class="close-btn" (click)="closeModals()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="addUser()">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" [(ngModel)]="newUser.username" name="username" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="newUser.email" name="email" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" [(ngModel)]="newUser.password" name="password" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select [(ngModel)]="newUser.role" name="role" class="form-select">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select [(ngModel)]="newUser.status" name="status" class="form-select">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add User</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal" [class.show]="showEditUserModal" *ngIf="showEditUserModal && selectedUser">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit User Details</h3>
+        <button class="close-btn" (click)="closeModals()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="updateUser()">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" [(ngModel)]="selectedUser.username" name="username" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="selectedUser.email" name="email" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" [(ngModel)]="selectedUser.password" name="password" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select [(ngModel)]="selectedUser.role" name="role" class="form-select">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select [(ngModel)]="selectedUser.status" name="status" class="form-select">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update User</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

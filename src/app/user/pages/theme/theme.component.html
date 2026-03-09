@@ -1,0 +1,37 @@
+<div class="theme-container">
+  <h1>Theme Settings</h1>
+  
+  <div class="theme-card">
+    <div class="theme-header">
+      <div>
+        <h2>Dark Mode</h2>
+        <p>Switch between light and dark theme</p>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" [(ngModel)]="isDarkMode" (change)="toggleTheme()">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="theme-preview">
+      <div class="preview-box" [class.dark]="isDarkMode">
+        <div class="preview-header">
+          <div class="preview-circle"></div>
+          <div class="preview-line"></div>
+        </div>
+        <div class="preview-content">
+          <div class="preview-sidebar"></div>
+          <div class="preview-main">
+            <div class="preview-card"></div>
+            <div class="preview-card"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-info">
+      <h3>Current Theme: {{ isDarkMode ? 'Dark' : 'Light' }}</h3>
+      <p>{{ isDarkMode ? 'Dark mode reduces eye strain in low-light conditions.' : 'Light mode provides better readability in bright environments.' }}</p>
+    </div>
+  </div>
+</div>

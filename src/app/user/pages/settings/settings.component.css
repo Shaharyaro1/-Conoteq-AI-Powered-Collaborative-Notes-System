@@ -1,0 +1,467 @@
+.settings-container {
+  padding: 2rem;
+  min-height: calc(100vh - 72px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
+}
+
+.settings-header {
+  margin-bottom: 2rem;
+}
+
+.header-content h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1f2937;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.header-content h1 mat-icon {
+  color: #7c3aed;
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Card Styles */
+.teachers-card {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  margin-bottom: 1.5rem;
+}
+
+.teachers-card mat-card-content {
+  padding: 1.5rem !important;
+}
+
+/* Search Section */
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-field {
+  flex: 1;
+  min-width: 300px;
+  font-size: 1rem;
+  margin: 0 !important;
+}
+
+.search-field mat-icon {
+  color: #7c3aed;
+}
+
+/* Align search icon vertically with text */
+::ng-deep .search-field .mat-mdc-form-field-icon-prefix {
+  display: flex !important;
+  align-items: center !important;
+  padding-top: 0 !important;
+}
+
+::ng-deep .search-field .mat-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Fix search field height and alignment to match stat items */
+::ng-deep .search-field .mat-mdc-form-field-wrapper {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+::ng-deep .search-field .mat-mdc-text-field-wrapper {
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .search-field .mdc-text-field {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .search-field .mat-mdc-form-field-infix {
+  min-height: 40px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .search-field .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+}
+
+::ng-deep .search-field input {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  font-weight: 600;
+  color: #4b5563;
+  transition: all 0.3s ease;
+  height: 56px;
+  box-sizing: border-box;
+}
+
+.stat-item mat-icon {
+  color: #6b7280;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.stat-item.visible {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.stat-item.visible mat-icon {
+  color: #10b981;
+}
+
+.stat-item.hidden {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.stat-item.hidden mat-icon {
+  color: #ef4444;
+}
+
+.stat-item.dashboard {
+  border-color: #7c3aed;
+  background: #f3e8ff;
+}
+
+.stat-item.dashboard mat-icon {
+  color: #7c3aed;
+}
+
+/* Table Container */
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  background: white;
+}
+
+.teachers-table {
+  width: 100%;
+  background: white;
+}
+
+.teachers-table th {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 1rem !important;
+  border: none !important;
+}
+
+.teachers-table td {
+  padding: 1rem !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  color: #374151;
+}
+
+.table-row {
+  transition: all 0.2s ease;
+}
+
+.table-row:hover {
+  background: #faf5ff !important;
+}
+
+/* Avatar */
+.teacher-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #7c3aed;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+}
+
+/* Teacher Name */
+.teacher-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+/* Subject Chip */
+.subject-chip {
+  background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%) !important;
+  color: #7c3aed !important;
+  font-weight: 600 !important;
+  border: 2px solid #7c3aed !important;
+}
+
+/* Email Cell */
+.email-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+}
+
+.email-cell mat-icon {
+  color: #7c3aed;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Status Chips */
+.status-visible {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.status-visible mat-icon {
+  color: white !important;
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.status-hidden {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.status-hidden mat-icon {
+  color: white !important;
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Action Button */
+.action-btn {
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 0.5rem 1rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.action-btn mat-icon {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* No Data */
+.no-data {
+  text-align: center;
+  padding: 3rem !important;
+}
+
+.no-data-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #9ca3af;
+}
+
+.no-data-content mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  opacity: 0.5;
+}
+
+.no-data-content p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #6b7280;
+}
+
+/* Paginator */
+.teachers-paginator {
+  border-top: 2px solid #e5e7eb;
+  background: #fafafa;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Info Card */
+.info-card {
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%) !important;
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important;
+}
+
+.info-content {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.info-content > mat-icon {
+  color: #3b82f6;
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.info-content h3 {
+  margin: 0 0 0.75rem 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.info-content ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #4b5563;
+}
+
+.info-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.info-content strong {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-field {
+    width: 100%;
+  }
+
+  .stats {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 1rem;
+  }
+
+  .header-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .stats {
+    flex-direction: column;
+  }
+
+  .stat-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-container {
+    overflow-x: scroll;
+  }
+
+  .teachers-table {
+    min-width: 800px;
+  }
+
+  .info-content {
+    flex-direction: column;
+  }
+}
+
+/* Material Overrides */
+::ng-deep .mat-mdc-form-field-focus-overlay {
+  background-color: rgba(124, 58, 237, 0.05) !important;
+}
+
+::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: white !important;
+}
+
+::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: white !important;
+}
+
+::ng-deep .mat-mdc-paginator {
+  background: transparent !important;
+}

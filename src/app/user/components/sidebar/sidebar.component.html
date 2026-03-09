@@ -1,0 +1,38 @@
+<aside class="sidebar">
+  <div class="sidebar-menu">
+    <ng-container *ngFor="let item of menuItems">
+      <!-- Regular menu item -->
+      <a *ngIf="!item.hasDropdown" 
+         [routerLink]="item.route" 
+         routerLinkActive="active"
+         class="menu-item">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </a>
+      
+      <!-- Dropdown menu item -->
+      <div *ngIf="item.hasDropdown" class="menu-item-dropdown">
+        <div class="menu-item" 
+             (click)="toggleDropdown(item)"
+             [class.active]="item.isOpen">
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+          <mat-icon class="dropdown-icon" [class.rotated]="item.isOpen">{{ item.isOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </div>
+        <div class="dropdown-menu" 
+             *ngIf="item.isOpen">
+          <a *ngFor="let child of item.children" 
+             [routerLink]="child.route" 
+             routerLinkActive="active"
+             class="dropdown-item">
+            <mat-icon>{{ child.icon }}</mat-icon>
+            <span>{{ child.label }}</span>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Divider -->
+      <div *ngIf="item.hasDivider" class="menu-divider"></div>
+    </ng-container>
+  </div>
+</aside>

@@ -1,0 +1,232 @@
+<div class="upload-container">
+  <h1>Upload Notes</h1>
+  
+  <!-- Upload Form -->
+  <div class="upload-form-card">
+    <h2>Upload New Notes</h2>
+    <form class="notes-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="notesName">Notes Name *</label>
+          <input 
+            type="text" 
+            id="notesName" 
+            [(ngModel)]="notesName"
+            name="notesName"
+            placeholder="Enter notes name"
+            required>
+        </div>
+        
+        <div class="form-group">
+          <label for="subject">Subject *</label>
+          <input 
+            type="text" 
+            id="subject" 
+            [(ngModel)]="subject"
+            name="subject"
+            placeholder="Enter subject"
+            required>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="teacherName">Teacher Name *</label>
+          <input 
+            type="text" 
+            id="teacherName" 
+            [(ngModel)]="teacherName"
+            name="teacherName"
+            placeholder="Enter teacher name"
+            required>
+        </div>
+        
+        <div class="form-group">
+          <label for="fileInput">Upload File *</label>
+          <div class="file-input-wrapper">
+            <input 
+              type="file" 
+              id="fileInput" 
+              (change)="onFileSelected($event)"
+              accept=".pdf,.doc,.docx"
+              hidden>
+            <label for="fileInput" class="file-input-label">
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+              </svg>
+              {{ selectedFile ? selectedFile.name : 'Choose File' }}
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <button 
+        type="button" 
+        class="btn-submit" 
+        (click)="uploadNotes()"
+        [disabled]="!notesName || !subject || !teacherName || !selectedFile">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2zm2.354 5.146a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2z"/>
+        </svg>
+        Upload Notes
+      </button>
+    </form>
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="search-section">
+    <div class="search-header">
+      <h2>My Uploaded Notes</h2>
+      <div class="search-controls">
+        <div class="search-bar">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+          <input 
+            type="text" 
+            placeholder="Search notes by name, subject, or teacher..."
+            [(ngModel)]="searchTerm"
+            name="searchTerm"
+            (input)="onSearch()"
+            class="search-input">
+          <button 
+            *ngIf="searchTerm" 
+            class="clear-search" 
+            (click)="clearSearch()"
+            title="Clear search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="filter-dropdown">
+          <select [(ngModel)]="statusFilter" name="statusFilter" (change)="onFilterChange()" class="status-filter">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="quick-stats" *ngIf="uploadedNotes.length > 0">
+      <div class="stat-item">
+        <span class="stat-number">{{ getTotalNotes() }}</span>
+        <span class="stat-label">Total Notes</span>
+      </div>
+      <div class="stat-item pending">
+        <span class="stat-number">{{ getPendingCount() }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+      <div class="stat-item approved">
+        <span class="stat-number">{{ getApprovedCount() }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+      <div class="stat-item rejected">
+        <span class="stat-number">{{ getRejectedCount() }}</span>
+        <span class="stat-label">Rejected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uploaded Notes Table -->
+  <div class="notes-table-card">
+ 
+
+    <!-- No Results Message -->
+    <div *ngIf="filteredNotes.length === 0 && uploadedNotes.length > 0" class="no-results">
+      <div class="no-results-icon">
+        <svg width="48" height="48" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+        </svg>
+      </div>
+      <h3>No notes found</h3>
+      <p>No notes match your search criteria. Try adjusting your search terms or filters.</p>
+      <button class="btn-clear-filters" (click)="clearAllFilters()">Clear All Filters</button>
+    </div>
+
+    <!-- Table with Data -->
+    <div *ngIf="filteredNotes.length > 0" class="table-wrapper">
+      <table class="notes-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Notes Name</th>
+            <th>Subject</th>
+            <th>Teacher Name</th>
+            <th>File Name</th>
+            <th>File Size</th>
+            <th>Upload Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let note of paginatedNotes">
+            <td>
+              <div class="status-indicator" [ngClass]="getStatusClass(note.status)">
+                <div class="status-circle">
+                  <svg *ngIf="note.status === 'approved'" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                  </svg>
+                  <svg *ngIf="note.status === 'rejected'" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+                  <svg *ngIf="note.status === 'pending'" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                  </svg>
+                </div>
+                <span class="status-text">{{ getStatusText(note.status) }}</span>
+              </div>
+            </td>
+            <td><strong>{{ note.notesName }}</strong></td>
+            <td>{{ note.subject }}</td>
+            <td>{{ note.teacherName }}</td>
+            <td>
+              <div class="file-name">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                </svg>
+                {{ note.fileName }}
+              </div>
+            </td>
+            <td>{{ note.fileSize }}</td>
+            <td>{{ note.uploadDate }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-action btn-edit" (click)="editNote(note)" title="Edit Note">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                  </svg>
+                </button>
+                <button class="btn-action btn-delete" (click)="deleteNote(note.id)" title="Delete">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Material Paginator -->
+    <div class="paginator-container" *ngIf="filteredNotes.length > 0">
+      <mat-paginator 
+        [length]="totalItems"
+        [pageSize]="pageSize"
+        [pageIndex]="pageIndex"
+        [pageSizeOptions]="[5, 10, 15, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+        class="notes-paginator">
+      </mat-paginator>
+    </div>
+  </div>
+</div>
+

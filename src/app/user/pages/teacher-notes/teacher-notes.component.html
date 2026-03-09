@@ -1,0 +1,150 @@
+<div class="teacher-notes-page">
+  <!-- Header with Back Button -->
+  <div class="page-header">
+    <button mat-icon-button class="back-btn" (click)="goBack()" matTooltip="Back to Dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Teacher Notes</h1>
+  </div>
+
+  <div class="content-wrapper" *ngIf="teacher">
+    <!-- Teacher Info Card -->
+    <mat-card class="teacher-info-card">
+      <div class="teacher-info-content">
+        <div class="teacher-avatar-large">
+          <img [src]="getTeacherAvatar(teacher)" [alt]="teacher.name" (error)="onImageError($event, teacher)">
+          <div class="avatar-badge">
+            <mat-icon>school</mat-icon>
+          </div>
+        </div>
+        
+        <div class="teacher-details">
+          <h2 class="teacher-name-large">{{teacher.name}}</h2>
+          
+          <div class="teacher-info-row">
+            <mat-icon class="info-icon">workspace_premium</mat-icon>
+            <span>{{teacher.qualification}}</span>
+          </div>
+          
+          <div class="teacher-info-row">
+            <mat-icon class="info-icon">menu_book</mat-icon>
+            <span>{{teacher.subject}}</span>
+          </div>
+          
+          <div class="teacher-info-row">
+            <mat-icon class="info-icon">email</mat-icon>
+            <span>{{teacher.email}}</span>
+          </div>
+          
+          <mat-chip-set class="stats-chips">
+            <mat-chip class="stat-chip">
+              <mat-icon matChipAvatar>description</mat-icon>
+              {{teacherNotes.length}} Notes
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Notes Table Card -->
+    <mat-card class="notes-table-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="title-icon">library_books</mat-icon>
+          Uploaded Notes
+        </mat-card-title>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div *ngIf="teacherNotes.length === 0" class="no-notes-message">
+          <mat-icon class="no-notes-icon">folder_open</mat-icon>
+          <h3>No Notes Available</h3>
+          <p>This teacher hasn't uploaded any notes yet.</p>
+        </div>
+
+        <div *ngIf="teacherNotes.length > 0" class="notes-table-container">
+          <table mat-table [dataSource]="teacherNotes" class="notes-table">
+            <!-- Title Column -->
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-icon class="header-icon">title</mat-icon>
+                Title
+              </th>
+              <td mat-cell *matCellDef="let note">
+                <div class="note-title-cell">
+                  <mat-icon class="note-icon">description</mat-icon>
+                  <span>{{note.title}}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Chapter Column -->
+            <ng-container matColumnDef="chapter">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-icon class="header-icon">bookmark</mat-icon>
+                Chapter
+              </th>
+              <td mat-cell *matCellDef="let note">{{note.chapter || 'N/A'}}</td>
+            </ng-container>
+
+            <!-- File Name Column -->
+            <ng-container matColumnDef="fileName">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-icon class="header-icon">insert_drive_file</mat-icon>
+                File Name
+              </th>
+              <td mat-cell *matCellDef="let note">
+                <span class="file-name">{{note.fileName}}</span>
+              </td>
+            </ng-container>
+
+            <!-- File Size Column -->
+            <ng-container matColumnDef="fileSize">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-icon class="header-icon">storage</mat-icon>
+                Size
+              </th>
+              <td mat-cell *matCellDef="let note">
+                <mat-chip class="size-chip">{{note.fileSize}}</mat-chip>
+              </td>
+            </ng-container>
+
+            <!-- Upload Date Column -->
+            <ng-container matColumnDef="uploadDate">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-icon class="header-icon">calendar_today</mat-icon>
+                Upload Date
+              </th>
+              <td mat-cell *matCellDef="let note">{{note.uploadDate}}</td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let note">
+                <div class="action-buttons">
+                  <button mat-mini-fab color="primary" (click)="viewNote(note)" matTooltip="View Note" class="action-btn">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                  <button mat-mini-fab color="accent" (click)="downloadNote(note)" matTooltip="Download Note" class="action-btn">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="!teacher" class="loading-state">
+    <mat-icon class="loading-icon">hourglass_empty</mat-icon>
+    <p>Loading teacher information...</p>
+  </div>
+</div>
+""
