@@ -4,10 +4,10 @@
   top: 60px;
   bottom: 0;
   width: 220px;
-  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(180deg, #49017F 0%, #3A0160 100%);
   padding: 1.5rem 0;
   overflow-y: auto;
-  box-shadow: 4px 0 20px rgba(124, 58, 237, 0.25);
+  box-shadow: 4px 0 20px rgba(73, 1, 127, 0.25);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 

@@ -39,6 +39,33 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
   subject: string = '';
   teacherName: string = '';
   
+  // Subject and Teacher choices with default options
+  subjects: string[] = [
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'Computer Science',
+    'English',
+    'History',
+    'Geography',
+    'Economics',
+    'Business Studies'
+  ];
+  teachers: string[] = [
+    'Dr. Ahmed Khan',
+    'Prof. Sarah Ali',
+    'Mr. Hassan Raza',
+    'Ms. Fatima Malik',
+    'Dr. Usman Sheikh'
+  ];
+
+  // Flags for showing add new inputs
+  showAddSubject: boolean = false;
+  showAddTeacher: boolean = false;
+  newSubject: string = '';
+  newTeacher: string = '';
+  
   // View modal
   showViewModal: boolean = false;
   selectedNote: Note | null = null;
@@ -77,6 +104,9 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   
   ngOnInit() {
+    // Load custom subjects and teachers
+    this.loadCustomOptions();
+
     // Subscribe to notes from API service
     const notesSubscription = this.apiService.notes$.subscribe(notes => {
       console.log('📥 Received notes from API:', notes.length);
@@ -110,6 +140,16 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
 
 
   uploadNotes() {
+    // Auto-save custom subject/teacher if not in list
+    if (this.subject && !this.subjects.includes(this.subject)) {
+      this.subjects.push(this.subject);
+      this.saveSubjectsToLocalStorage();
+    }
+    if (this.teacherName && !this.teachers.includes(this.teacherName)) {
+      this.teachers.push(this.teacherName);
+      this.saveTeachersToLocalStorage();
+    }
+
     if (this.selectedFile && this.notesName && this.subject && this.teacherName) {
       // Read file as base64
       const reader = new FileReader();
@@ -161,10 +201,121 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
     this.subject = '';
     this.teacherName = '';
     this.selectedFile = null;
+    this.showAddSubject = false;
+    this.showAddTeacher = false;
+    this.newSubject = '';
+    this.newTeacher = '';
     
     // Reset file input
     const fileInput = document.getElementById('fileInput') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
+  }
+
+  // Handle subject dropdown change
+  onSubjectChange() {
+    if (this.subject === '__add_new__') {
+      this.subject = '';
+      this.showAddSubject = true;
+    }
+  }
+
+  // Handle teacher dropdown change
+  onTeacherChange() {
+    if (this.teacherName === '__add_new__') {
+      this.teacherName = '';
+      this.showAddTeacher = true;
+    }
+  }
+
+  // Add new subject
+  addNewSubject() {
+    if (this.newSubject.trim() && !this.subjects.includes(this.newSubject.trim())) {
+      this.subjects.push(this.newSubject.trim());
+      this.subject = this.newSubject.trim();
+      this.newSubject = '';
+      this.showAddSubject = false;
+      this.saveSubjectsToLocalStorage();
+    } else if (this.newSubject.trim()) {
+      alert('This subject already exists!');
+    }
+  }
+
+  // Add new teacher
+  addNewTeacher() {
+    if (this.newTeacher.trim() && !this.teachers.includes(this.newTeacher.trim())) {
+      this.teachers.push(this.newTeacher.trim());
+      this.teacherName = this.newTeacher.trim();
+      this.newTeacher = '';
+      this.showAddTeacher = false;
+      this.saveTeachersToLocalStorage();
+    } else if (this.newTeacher.trim()) {
+      alert('This teacher already exists!');
+    }
+  }
+
+  // Cancel adding new subject
+  cancelAddSubject() {
+    this.showAddSubject = false;
+    this.newSubject = '';
+    this.subject = '';
+  }
+
+  // Cancel adding new teacher
+  cancelAddTeacher() {
+    this.showAddTeacher = false;
+    this.newTeacher = '';
+    this.teacherName = '';
+  }
+
+  // Save subjects to localStorage (only custom ones)
+  private saveSubjectsToLocalStorage() {
+    if (isPlatformBrowser(this.platformId)) {
+      const defaultSubjects = [
+        'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science',
+        'English', 'History', 'Geography', 'Economics', 'Business Studies'
+      ];
+      const customSubjects = this.subjects.filter(s => !defaultSubjects.includes(s));
+      localStorage.setItem('customSubjects', JSON.stringify(customSubjects));
+    }
+  }
+
+  // Save teachers to localStorage (only custom ones)
+  private saveTeachersToLocalStorage() {
+    if (isPlatformBrowser(this.platformId)) {
+      const defaultTeachers = [
+        'Dr. Ahmed Khan', 'Prof. Sarah Ali', 'Mr. Hassan Raza',
+        'Ms. Fatima Malik', 'Dr. Usman Sheikh'
+      ];
+      const customTeachers = this.teachers.filter(t => !defaultTeachers.includes(t));
+      localStorage.setItem('customTeachers', JSON.stringify(customTeachers));
+    }
+  }
+
+  // Load custom subjects and teachers from localStorage
+  private loadCustomOptions() {
+    if (isPlatformBrowser(this.platformId)) {
+      const savedSubjects = localStorage.getItem('customSubjects');
+      if (savedSubjects) {
+        const customSubjects = JSON.parse(savedSubjects);
+        // Merge with default subjects, avoiding duplicates
+        customSubjects.forEach((subj: string) => {
+          if (!this.subjects.includes(subj)) {
+            this.subjects.push(subj);
+          }
+        });
+      }
+      
+      const savedTeachers = localStorage.getItem('customTeachers');
+      if (savedTeachers) {
+        const customTeachers = JSON.parse(savedTeachers);
+        // Merge with default teachers, avoiding duplicates
+        customTeachers.forEach((teacher: string) => {
+          if (!this.teachers.includes(teacher)) {
+            this.teachers.push(teacher);
+          }
+        });
+      }
+    }
   }
 
   handleNotificationUpdates(updates: NotificationUpdate[]) {

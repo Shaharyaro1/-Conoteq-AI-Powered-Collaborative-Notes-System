@@ -7,7 +7,7 @@
     <form class="notes-form">
       <div class="form-row">
         <div class="form-group">
-          <label for="notesName">Notes Name *</label>
+          <label for="notesName">Notes Name</label>
           <input 
             type="text" 
             id="notesName" 
@@ -18,22 +18,23 @@
         </div>
         
         <div class="form-group">
-          <label for="subject">Subject *</label>
-          <input 
-            type="text" 
+          <label for="subject">Subject</label>
+          <select 
             id="subject" 
             [(ngModel)]="subject"
             name="subject"
-            placeholder="Enter subject"
             required>
+            <option value="">Select Subject</option>
+            <option *ngFor="let subj of subjects" [value]="subj">{{ subj }}</option>
+          </select>
         </div>
       </div>
       
       <div class="form-row">
         <div class="form-group">
-          <label for="teacherName">Teacher Name *</label>
+          <label for="teacherName">Teacher Name</label>
           <input 
-            type="text" 
+            type="text"
             id="teacherName" 
             [(ngModel)]="teacherName"
             name="teacherName"
@@ -42,7 +43,7 @@
         </div>
         
         <div class="form-group">
-          <label for="fileInput">Upload File *</label>
+          <label for="fileInput">Upload File</label>
           <div class="file-input-wrapper">
             <input 
               type="file" 

@@ -1,12 +1,12 @@
 .navbar {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #49017F 0%, #3A0160 100%);
   color: white;
   padding: 0.75rem 2rem;
   height: 60px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 2px 8px rgba(73, 1, 127, 0.2);
   position: fixed;
   top: 0;
   left: 0;
@@ -182,7 +182,7 @@
   height: 35px;
   border-radius: 50%;
   background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
-  color: #7c3aed;
+  color: #49017F;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,7 +220,7 @@
   box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   min-width: 200px;
   overflow: hidden;
-  border: 1px solid rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(73, 1, 127, 0.1);
   animation: slideDown 0.3s ease;
 }
 
@@ -281,7 +281,7 @@
   background: white;
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(73, 1, 127, 0.1);
   z-index: 1000;
   overflow: hidden;
   margin-top: 0.75rem;
@@ -294,7 +294,7 @@
   align-items: center;
   padding: 1.25rem 1.5rem;
   border-bottom: 2px solid #f3f4f6;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #49017F 0%, #3A0160 100%);
   color: white;
 }
 
@@ -454,7 +454,7 @@
 
 .btn-view-all {
   width: 100%;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #49017F 0%, #3A0160 100%);
   color: white;
   border: none;
   padding: 0.75rem 1rem;
@@ -468,9 +468,9 @@
 }
 
 .btn-view-all:hover {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  background: linear-gradient(135deg, #3A0160 0%, #2A0048 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 4px 12px rgba(73, 1, 127, 0.3);
 }
 
 /* Custom scrollbar for notification list */
@@ -608,7 +608,7 @@
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 700;
-  border: 2px solid #7c3aed;
+  border: 2px solid #49017F;
   animation: pulse 2s infinite;
 }
 
@@ -807,7 +807,7 @@
 
 .btn-view-all {
   width: 100%;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #49017F 0%, #3A0160 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -822,9 +822,9 @@
 }
 
 .btn-view-all:hover {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  background: linear-gradient(135deg, #3A0160 0%, #2A0048 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 4px 12px rgba(73, 1, 127, 0.3);
 }
 
 /* Responsive Design */
