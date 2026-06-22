@@ -1,37 +1,74 @@
 .dashboard {
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 24px;
+  background: #f8f9fa;
   min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Dashboard Header */
-.dashboard-header {
+/* Header Styles - Matching Teacher Manager */
+.header {
+  margin-bottom: 24px;
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid #e9ecef;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
   gap: 2rem;
   flex-wrap: wrap;
 }
 
-h1 {
-  color: #1f2937;
+.header h1 {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #212529;
+  font-size: 28px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #6f42c1 0%, #007bff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-align: left;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
-  flex: 1;
-  justify-content: flex-end;
+}
+
+.refresh-btn {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.4);
+}
+
+.refresh-btn svg {
+  animation: none;
+}
+
+.refresh-btn:hover svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .search-bar {
@@ -70,6 +107,31 @@ h1 {
 }
 
 
+
+/* Specific styling for each action button text */
+.action-btn.orange .btn-label {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+}
+
+.action-btn.green .btn-label {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+}
+
+.action-btn.red .btn-label {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+}
+
+.action-btn.blue .btn-label {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+}
 
 /* Action Buttons */
 .action-buttons {
@@ -159,21 +221,31 @@ h1 {
   flex-direction: column;
   align-items: flex-start;
   flex: 1;
+  text-align: left;
 }
 
 .btn-label {
   font-size: 0.95rem;
-  font-weight: 600;
-  opacity: 0.9;
+  font-weight: 700;
+  opacity: 0.95;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .btn-value {
   font-size: 2rem;
   font-weight: 900;
   line-height: 1;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .stats-grid {
@@ -354,7 +426,6 @@ h1 {
   left: 0;
   right: 0;
   height: 6px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #11998e 100%);
 }
 
 .section-header {
@@ -417,7 +488,7 @@ h1 {
   margin: 0;
   font-size: 2rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ background: linear-gradient(135deg, #6f42c1 0%, #007bff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -570,29 +641,23 @@ h1 {
 /* Responsive Design */
 @media (max-width: 768px) {
   .dashboard {
-    padding: 1rem;
+    padding: 16px;
   }
   
-  .dashboard-header {
+  .header {
+    padding: 20px;
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
   
+  .header h1 {
+    font-size: 24px;
+  }
+  
   .header-actions {
     width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .search-bar {
-    min-width: 100%;
-  }
-  
-
-  
-  h1 {
-    font-size: 2rem;
+    justify-content: flex-start;
   }
   
   .action-buttons {
@@ -607,6 +672,13 @@ h1 {
   .btn-icon {
     width: 50px;
     height: 50px;
+  }
+  
+  .btn-label {
+    font-size: 0.85rem;
+    letter-spacing: 0.6px;
+    white-space: normal;
+    text-align: left;
   }
   
   .btn-value {

@@ -1,0 +1,160 @@
+<div class="dashboard">
+  <!-- Header - Same as User Dashboard -->
+  <div class="header">
+    <h1>AI Question Generator</h1>
+    <p class="header-subtitle">Upload your notes or enter text to generate questions</p>
+  </div>
+
+  <div class="content-wrapper">
+    <!-- Input Section -->
+    <div class="input-section">
+      <mat-card class="input-card">
+        <mat-card-header>
+          <mat-card-title>Input Your Content</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <!-- Tab Selection -->
+          <div class="input-tabs">
+            <button 
+              class="tab-button" 
+              [class.active]="inputMode === 'text'"
+              (click)="inputMode = 'text'">
+              <mat-icon>text_fields</mat-icon>
+              Text Input
+            </button>
+            <button 
+              class="tab-button" 
+              [class.active]="inputMode === 'file'"
+              (click)="inputMode = 'file'">
+              <mat-icon>upload_file</mat-icon>
+              Upload File
+            </button>
+          </div>
+
+          <!-- Text Input Mode -->
+          <div *ngIf="inputMode === 'text'" class="text-input-section">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Enter your notes or content</mat-label>
+              <textarea 
+                matInput 
+                [(ngModel)]="textContent"
+                placeholder="Paste your notes here..."
+                rows="10"
+                [disabled]="isGenerating"></textarea>
+            </mat-form-field>
+          </div>
+
+          <!-- File Upload Mode -->
+          <div *ngIf="inputMode === 'file'" class="file-upload-section">
+            <div class="upload-area" 
+                 (click)="fileInput.click()"
+                 (dragover)="onDragOver($event)"
+                 (dragleave)="onDragLeave($event)"
+                 (drop)="onDrop($event)"
+                 [class.drag-over]="isDragging">
+              <input 
+                #fileInput 
+                type="file" 
+                (change)="onFileSelected($event)"
+                accept=".pdf,.doc,.docx,.txt"
+                style="display: none;">
+              
+              <mat-icon class="upload-icon">cloud_upload</mat-icon>
+              <p class="upload-text">Click to upload or drag and drop</p>
+              <p class="upload-hint">PDF, DOC, DOCX, TXT (Max 10MB)</p>
+            </div>
+
+            <div *ngIf="selectedFile" class="selected-file">
+              <mat-icon>description</mat-icon>
+              <span class="file-name">{{ selectedFile.name }}</span>
+              <span class="file-size">({{ formatFileSize(selectedFile.size) }})</span>
+              <button mat-icon-button (click)="removeFile()" [disabled]="isGenerating">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+
+            <div *ngIf="fileError" class="error-message">
+              <mat-icon>error</mat-icon>
+              {{ fileError }}
+            </div>
+          </div>
+
+          <!-- Question Count Selection -->
+          <div class="question-count-section">
+            <label class="section-label">Number of Questions</label>
+            <div class="count-buttons">
+              <button 
+                *ngFor="let count of questionCounts"
+                class="count-button"
+                [class.active]="selectedQuestionCount === count"
+                (click)="selectedQuestionCount = count"
+                [disabled]="isGenerating">
+                {{ count }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Generate Button -->
+          <button 
+            mat-raised-button 
+            color="primary" 
+            class="generate-button"
+            (click)="generateQuestions()"
+            [disabled]="!canGenerate() || isGenerating">
+            <mat-icon *ngIf="!isGenerating">auto_awesome</mat-icon>
+            <mat-spinner *ngIf="isGenerating" diameter="20"></mat-spinner>
+            {{ isGenerating ? 'Generating...' : 'Generate Questions' }}
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Output Section -->
+    <div class="output-section">
+      <mat-card class="output-card">
+        <mat-card-header>
+          <mat-card-title>Generated Questions</mat-card-title>
+          <button 
+            *ngIf="generatedQuestions.length > 0"
+            mat-icon-button
+            (click)="copyAllQuestions()"
+            matTooltip="Copy all questions">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="generatedQuestions.length === 0 && !isGenerating" class="empty-state">
+            <mat-icon class="empty-icon">quiz</mat-icon>
+            <p>No questions generated yet</p>
+            <p class="empty-hint">Upload a file or enter text to get started</p>
+          </div>
+
+          <div *ngIf="isGenerating" class="loading-state">
+            <mat-spinner diameter="50"></mat-spinner>
+            <p>Generating questions from your content...</p>
+          </div>
+
+          <div *ngIf="generatedQuestions.length > 0" class="questions-list">
+            <div *ngFor="let question of generatedQuestions; let i = index" class="question-item">
+              <div class="question-header">
+                <span class="question-number">Q{{ i + 1 }}</span>
+                <button 
+                  mat-icon-button 
+                  (click)="copyQuestion(question)"
+                  matTooltip="Copy question">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </div>
+              <p class="question-text">{{ question }}</p>
+            </div>
+          </div>
+
+          <div *ngIf="generationError" class="error-message">
+            <mat-icon>error</mat-icon>
+            {{ generationError }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

@@ -5,10 +5,16 @@ import { isPlatformBrowser } from '@angular/common';
 interface Teacher {
   id?: number;
   name: string;
-  qualification: string;
+  qualification?: string;
   subject: string;
   email: string;
-  profileImage: string;
+  phone?: string;
+  bio?: string;
+  profileImage?: string;
+  isActive?: boolean;
+  isVisible?: boolean;
+  createdAt?: string;
+  notesCount?: number;
 }
 
 interface TeacherNote {
@@ -34,39 +40,25 @@ export class DataService {
   notes$ = this.notesSubject.asObservable();
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
-    this.loadData();
+    // DO NOT auto-load from localStorage - let components control data loading
+    console.log('📊 DataService initialized - waiting for API data');
   }
 
   private loadData() {
-    if (isPlatformBrowser(this.platformId)) {
-      // Load teachers
-      const savedTeachers = localStorage.getItem('teachers');
-      if (savedTeachers) {
-        const teachers = JSON.parse(savedTeachers);
-        this.teachersSubject.next(teachers);
-      }
-
-      // Load notes
-      const savedNotes = localStorage.getItem('teacherNotes');
-      if (savedNotes) {
-        const notes = JSON.parse(savedNotes);
-        this.notesSubject.next(notes);
-      }
-    }
+    // This method is now deprecated - components should use API data directly
+    console.log('⚠️ loadData() called - this method is deprecated, use API data instead');
   }
 
   updateTeachers(teachers: Teacher[]) {
+    console.log('📊 DataService: Updating teachers from API data:', teachers.length);
     this.teachersSubject.next(teachers);
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('teachers', JSON.stringify(teachers));
-    }
+    // DO NOT save to localStorage - keep data in memory only for reactive updates
   }
 
   updateNotes(notes: TeacherNote[]) {
+    console.log('📊 DataService: Updating notes from API data:', notes.length);
     this.notesSubject.next(notes);
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('teacherNotes', JSON.stringify(notes));
-    }
+    // DO NOT save to localStorage - keep data in memory only for reactive updates
   }
 
   getTeachersCount(): number {

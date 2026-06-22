@@ -4,21 +4,25 @@ import { FormsModule } from '@angular/forms';
 import { TeacherFormComponent } from './teacher-form/teacher-form.component';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DataService } from '../../../shared/services/data.service';
+import { TeachersService, Teacher } from '../../../shared/services/teachers.service';
+import { TeacherNotesService } from '../../../shared/services/teacher-notes.service';
+import { environment } from '../../../../environments/environment';
 
 // Angular Material Imports
 import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 
-
-
-interface Teacher {
+// Local interface for form data
+interface TeacherFormData {
   id?: number;
   name: string;
-  qualification: string;
+  qualification?: string;
   subject: string;
   email: string;
-  profileImage: string;
-  isVisible?: boolean; // For hide/unhide functionality
+  phone?: string;
+  bio?: string;
+  profileImage?: string;
+  isActive?: boolean;
 }
 
 interface TeacherNote {
@@ -46,6 +50,11 @@ export class TeacherComponent implements OnInit, AfterViewInit {
   isEditMode: boolean = false;
   selectedTeacher: Teacher | null = null;
 
+  // Debug properties
+  debugInfo: string = '';
+  isLoading: boolean = false;
+  showDropdown: boolean = false;
+
   // Search functionality
   searchTerm: string = '';
   filteredTeachers: Teacher[] = [];
@@ -58,6 +67,7 @@ export class TeacherComponent implements OnInit, AfterViewInit {
   pageSize: number = 10;
   pageIndex: number = 0;
   totalItems: number = 0;
+  pageSizeOptions: number[] = [5, 10, 15, 20, 50];
 
   // Notes functionality
   showNotesModal: boolean = false;
@@ -71,9 +81,25 @@ export class TeacherComponent implements OnInit, AfterViewInit {
   // Make Math available in template
   Math = Math;
 
+  // Convert service Teacher to form Teacher
+  get formTeacherData(): TeacherFormData | null {
+    if (!this.selectedTeacher) return null;
+    return {
+      id: this.selectedTeacher.id,
+      name: this.selectedTeacher.name,
+      qualification: this.selectedTeacher.qualification,
+      subject: this.selectedTeacher.subject,
+      email: this.selectedTeacher.email,
+      profileImage: this.selectedTeacher.profileImage,
+      isActive: this.selectedTeacher.isActive
+    };
+  }
+
   constructor(
     private toastService: ToastService,
     private dataService: DataService,
+    private teachersService: TeachersService,
+    private teacherNotesService: TeacherNotesService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.dataSource = new MatTableDataSource<Teacher>([]);
@@ -82,91 +108,342 @@ export class TeacherComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     if (this.paginator) {
       this.dataSource.paginator = this.paginator;
+      console.log('✅ Paginator initialized in ngAfterViewInit');
     }
   }
 
   ngOnInit() {
     console.log('TeacherComponent ngOnInit started');
     
-    // Clear any existing sample data on first load
-    this.clearExistingSampleData();
+    // AGGRESSIVE localStorage clearing - remove ALL teacher data
+    this.aggressiveClearAllTeacherData();
     
-    this.loadTeachersFromLocalStorage();
-    this.loadTeacherNotesFromLocalStorage();
+    // Check authentication status
+    this.checkAuthStatus();
     
-    // Add sample teachers if none exist (for pagination testing)
-    if (this.teachers.length === 0) {
-      this.addSampleTeachers();
+    // Load teachers from API instead of localStorage
+    this.loadTeachersFromAPI();
+    this.loadTeacherNotesFromAPI();
+  }
+
+  aggressiveClearAllTeacherData() {
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('🔥 AGGRESSIVE CLEAR: Removing ALL teacher-related data...');
+      
+      // Clear specific known keys
+      const allPossibleKeys = [
+        'teachers', 'teacherData', 'teachersData', 'teacher_data',
+        'teacherNotes', 'teacher_notes', 'teacherNotesData',
+        'teacherVisibility', 'teacher_visibility', 'teacherVisibilityInitialized',
+        'sampleTeachers', 'sample_teachers', 'sampleTeachersAdded',
+        'defaultTeachers', 'default_teachers', 'initialTeachers',
+        'cachedTeachers', 'cached_teachers', 'storedTeachers',
+        'uploadedNotes', 'uploaded_notes', 'recentNotes', 'recent_notes',
+        'sampleDataCleared', 'sample_data_cleared', 'dataInitialized'
+      ];
+      
+      allPossibleKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+          console.log(`🗑️ Removed: ${key}`);
+        }
+      });
+      
+      // Scan ALL localStorage keys for anything teacher-related
+      const allKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) allKeys.push(key);
+      }
+      
+      allKeys.forEach(key => {
+        const lowerKey = key.toLowerCase();
+        if ((lowerKey.includes('teacher') || lowerKey.includes('note') || lowerKey.includes('sample')) && 
+            key !== 'auth_token' && key !== 'currentUser') {
+          localStorage.removeItem(key);
+          console.log(`🗑️ Removed suspicious key: ${key}`);
+        }
+      });
+      
+      console.log('🔥 AGGRESSIVE CLEAR COMPLETE - localStorage now contains only:');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        console.log(`  - ${key}`);
+      }
+    }
+  }
+
+  checkAuthStatus() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return; // Skip localStorage access during SSR
     }
     
-    this.filteredTeachers = [...this.teachers];
-    this.totalItems = this.filteredTeachers.length;
+    const token = localStorage.getItem('auth_token');
+    const user = localStorage.getItem('currentUser');
+    console.log('🔐 Auth Status Check:');
+    console.log('  - Token exists:', !!token);
+    console.log('  - Token preview:', token ? token.substring(0, 20) + '...' : 'No token');
+    console.log('  - User data:', user ? JSON.parse(user) : 'No user data');
+    
+    this.debugInfo = `Auth Check: Token ${token ? 'EXISTS' : 'MISSING'}, User: ${user ? JSON.parse(user).username : 'None'}`;
+    
+    if (!token) {
+      console.error('❌ No authentication token found!');
+      this.debugInfo += ' - ERROR: No auth token!';
+      this.toastService.error('Please log in to access teacher management');
+      return;
+    }
+  }
 
-    console.log('After loading - Teachers:', this.teachers.length, 'Filtered:', this.filteredTeachers.length);
+  refreshData() {
+    console.log('🔄 Refreshing teacher data...');
+    this.loadTeachersFromAPI();
+    this.loadTeacherNotesFromAPI();
+  }
 
-    // Initialize the data service with current data
-    this.dataService.updateTeachers(this.teachers);
+  testApiCall() {
+    console.log('🧪 Testing API call manually...');
+    if (!isPlatformBrowser(this.platformId)) {
+      console.log('❌ Cannot test API call during SSR');
+      return;
+    }
+    
+    const token = localStorage.getItem('auth_token');
+    console.log('🔑 Current token:', token ? 'Token exists' : 'No token');
+    
+    if (!token) {
+      this.toastService.error('No authentication token found. Please log in again.');
+      return;
+    }
+    
+    this.teachersService.getTeachers().subscribe({
+      next: (teachers) => {
+        console.log('✅ Manual API test successful:', teachers);
+        this.toastService.success(`API test successful! Found ${teachers.length} teachers`);
+        this.teachers = teachers;
+        this.filteredTeachers = [...this.teachers];
+        this.totalItems = this.filteredTeachers.length;
+        this.dataSource.data = this.filteredTeachers;
+      },
+      error: (error) => {
+        console.error('❌ Manual API test failed:', error);
+        this.toastService.error(`API test failed: ${error.message}`);
+      }
+    });
+  }
+
+  clearAllLocalStorageData() {
+    console.log('🧹 Clearing ALL localStorage data (except auth)...');
+    if (isPlatformBrowser(this.platformId)) {
+      const authToken = localStorage.getItem('auth_token');
+      const currentUser = localStorage.getItem('currentUser');
+      
+      // Clear everything
+      localStorage.clear();
+      
+      // Restore auth data
+      if (authToken) localStorage.setItem('auth_token', authToken);
+      if (currentUser) localStorage.setItem('currentUser', currentUser);
+      
+      console.log('✅ All localStorage cleared except auth data');
+      this.toastService.success('All cached data cleared. Refreshing from API...');
+      
+      // Reload data from API
+      this.loadTeachersFromAPI();
+    }
+  }
+
+  forceApiOnlyMode() {
+    console.log('🚀 FORCE API ONLY MODE - Clearing all cached data...');
+    
+    if (isPlatformBrowser(this.platformId)) {
+      // Save auth data
+      const authToken = localStorage.getItem('auth_token');
+      const currentUser = localStorage.getItem('currentUser');
+      
+      // Clear everything
+      localStorage.clear();
+      
+      // Restore auth
+      if (authToken) localStorage.setItem('auth_token', authToken);
+      if (currentUser) localStorage.setItem('currentUser', currentUser);
+      
+      // Reset component state
+      this.teachers = [];
+      this.filteredTeachers = [];
+      this.totalItems = 0;
+      this.dataSource.data = [];
+      
+      // Force reload from API
+      this.debugInfo = 'Forced API-only mode - loading fresh data...';
+      this.loadTeachersFromAPI();
+      
+      this.toastService.success('Forced API-only mode activated! All data now comes from database.');
+    }
+  }
+
+  nuclearReset() {
+    console.log('💥 NUCLEAR RESET - Complete component reset...');
+    
+    if (isPlatformBrowser(this.platformId)) {
+      // Save auth data
+      const authToken = localStorage.getItem('auth_token');
+      const currentUser = localStorage.getItem('currentUser');
+      
+      // COMPLETE localStorage clear
+      localStorage.clear();
+      
+      // Restore auth
+      if (authToken) localStorage.setItem('auth_token', authToken);
+      if (currentUser) localStorage.setItem('currentUser', currentUser);
+      
+      // COMPLETE component reset
+      this.teachers = [];
+      this.filteredTeachers = [];
+      this.totalItems = 0;
+      this.pageIndex = 0;
+      this.pageSize = 10;
+      this.searchTerm = '';
+      this.dataSource = new MatTableDataSource<Teacher>([]);
+      this.showForm = false;
+      this.isEditMode = false;
+      this.selectedTeacher = null;
+      
+      // Force aggressive clear and reload
+      this.aggressiveClearAllTeacherData();
+      
+      this.debugInfo = 'NUCLEAR RESET COMPLETE - Reloading from API...';
+      this.isLoading = true;
+      
+      // Delay to ensure everything is cleared
+      setTimeout(() => {
+        this.loadTeachersFromAPI();
+      }, 500);
+      
+      this.toastService.success('NUCLEAR RESET complete! Component fully reinitialized with API data only.');
+    }
+  }
+
+  loadTeachersFromAPI() {
+      console.log('👥 Loading teachers from API...');
+      if (isPlatformBrowser(this.platformId)) {
+        console.log('🔑 Auth token exists:', !!localStorage.getItem('auth_token'));
+      }
+      
+      // Check current component state before API call
+      console.log('📊 Current component state BEFORE API call:');
+      console.log('  - teachers array length:', this.teachers.length);
+      console.log('  - filteredTeachers length:', this.filteredTeachers.length);
+      console.log('  - dataSource data length:', this.dataSource.data.length);
+      
+      this.isLoading = true;
+      this.debugInfo = 'Starting API call...';
+      
+      this.teachersService.getTeachers().subscribe({
+        next: (teachers) => {
+          console.log('✅ Teachers loaded from API:', teachers.length);
+          console.log('📋 API Teachers data:', teachers);
+          
+          // Set new data from API
+          this.teachers = teachers;
+          this.filteredTeachers = [...this.teachers];
+          this.totalItems = this.filteredTeachers.length;
+          
+          // CRITICAL: Update dataSource.data and trigger change detection
+          this.dataSource.data = [...this.filteredTeachers];
+          
+          // Re-attach paginator if it exists
+          if (this.paginator) {
+            this.dataSource.paginator = this.paginator;
+            console.log('✅ Paginator re-attached after data load');
+          }
+          
+          this.isLoading = false;
+          this.debugInfo = `Successfully loaded ${teachers.length} teachers from API. Names: ${teachers.map(t => t.name).join(', ')}`;
+
+          console.log('📊 Component state AFTER API call:');
+          console.log('  - teachers array:', this.teachers.map(t => t.name));
+          console.log('  - filteredTeachers:', this.filteredTeachers.map(t => t.name));
+          console.log('  - dataSource data:', this.dataSource.data.map(t => t.name));
+          console.log('  - dataSource.data.length:', this.dataSource.data.length);
+
+          // Initialize the data service with current data
+          this.dataService.updateTeachers(this.teachers);
+        },
+        error: (error) => {
+          console.error('Failed to load teachers from API:', error);
+          console.error('❌ Error status:', error.status);
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Full error:', error);
+          
+          // FORCE CLEAR on error
+          this.teachers = [];
+          this.filteredTeachers = [];
+          this.totalItems = 0;
+          this.dataSource.data = [];
+          
+          this.isLoading = false;
+          this.debugInfo = `API Error: ${error.status} - ${error.message}. Token exists: ${isPlatformBrowser(this.platformId) ? !!localStorage.getItem('auth_token') : 'SSR'}`;
+          this.toastService.error('Failed to load teachers from server: ' + error.message);
+        }
+      });
+    }
+
+  loadTeacherNotesFromAPI() {
+    console.log('📝 Loading teacher notes from API...');
+    // For now, initialize empty array - will be loaded per teacher when needed
+    this.teacherNotes = [];
     this.dataService.updateNotes(this.teacherNotes);
   }
 
-  loadTeachersFromLocalStorage() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    const savedTeachers = localStorage.getItem('teachers');
-    if (savedTeachers) {
-      this.teachers = JSON.parse(savedTeachers);
-      this.filteredTeachers = [...this.teachers];
-      console.log('Loaded teachers from localStorage:', this.teachers);
-    } else {
-      console.log('No teachers found in localStorage');
-    }
-  }
 
-  saveTeachersToLocalStorage() {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('teachers', JSON.stringify(this.teachers));
-      console.log('✅ Teachers saved to localStorage successfully!');
-      console.log('📊 Total teachers in storage:', this.teachers.length);
-      console.log('💾 Storage key: "teachers"');
-      
-      // Verify data was saved
-      const savedData = localStorage.getItem('teachers');
-      if (savedData) {
-        console.log('✓ Verification: Data successfully stored in localStorage');
-      }
-    }
-    // Update the shared service
-    this.dataService.updateTeachers(this.teachers);
-  }
 
-  onFormSubmit(teacher: Teacher) {
+  onFormSubmit(teacher: TeacherFormData) {
     console.log('📝 Form submitted with teacher data:', teacher);
     
     if (this.isEditMode && this.selectedTeacher) {
-      // Update existing teacher
-      const index = this.teachers.findIndex(t => t.id === this.selectedTeacher!.id);
-      if (index !== -1) {
-        this.teachers[index] = { ...teacher, id: this.selectedTeacher.id };
-        console.log('✏️ Updated teacher:', this.teachers[index]);
-        this.toastService.success(`Teacher "${teacher.name}" updated successfully!`);
-      }
+      // Update existing teacher via API
+      this.teachersService.updateTeacher(this.selectedTeacher.id!, {
+        name: teacher.name,
+        qualification: teacher.qualification,
+        subject: teacher.subject,
+        email: teacher.email,
+        profileImage: teacher.profileImage,
+        isActive: teacher.isActive
+      }).subscribe({
+        next: (updatedTeacher) => {
+          console.log('✏️ Teacher updated via API:', updatedTeacher);
+          this.toastService.success(`Teacher "${teacher.name}" updated successfully!`);
+          this.loadTeachersFromAPI(); // Refresh list
+          this.closeFormModal();
+        },
+        error: (error) => {
+          console.error('❌ Failed to update teacher:', error);
+          this.toastService.error('Failed to update teacher');
+        }
+      });
     } else {
-      // Add new teacher
-      const newId = this.teachers.length > 0 
-        ? Math.max(...this.teachers.map(t => t.id!)) + 1 
-        : 1;
-      const newTeacher = { ...teacher, id: newId };
-      this.teachers.unshift(newTeacher);
-      console.log('➕ Added new teacher:', newTeacher);
-      console.log('📊 Total teachers now:', this.teachers.length);
-      this.toastService.success(`Teacher "${teacher.name}" added successfully!`);
+      // Add new teacher via API
+      this.teachersService.createTeacher({
+        name: teacher.name,
+        qualification: teacher.qualification,
+        subject: teacher.subject,
+        email: teacher.email,
+        profileImage: teacher.profileImage,
+        isActive: teacher.isActive ?? true
+      }).subscribe({
+        next: (newTeacher) => {
+          console.log('➕ Teacher added via API:', newTeacher);
+          this.toastService.success(`Teacher "${teacher.name}" added successfully!`);
+          this.loadTeachersFromAPI(); // Refresh list
+          this.closeFormModal();
+        },
+        error: (error) => {
+          console.error('❌ Failed to add teacher:', error);
+          this.toastService.error('Failed to add teacher');
+        }
+      });
     }
-    
-    console.log('💾 Saving to localStorage...');
-    this.saveTeachersToLocalStorage();
-    this.updateFilteredTeachers();
-    console.log('✓ Filtered teachers updated:', this.filteredTeachers.length);
-    this.closeFormModal();
   }
 
   editTeacher(teacher: Teacher) {
@@ -177,22 +454,49 @@ export class TeacherComponent implements OnInit, AfterViewInit {
 
   deleteTeacher(teacher: Teacher) {
     if (confirm(`Are you sure you want to delete ${teacher.name}?`)) {
-      this.teachers = this.teachers.filter(t => t.id !== teacher.id);
-      this.saveTeachersToLocalStorage();
-      this.updateFilteredTeachers();
-      this.toastService.info(`Teacher "${teacher.name}" deleted successfully.`);
+      this.teachersService.deleteTeacher(teacher.id!).subscribe({
+        next: () => {
+          console.log('🗑️ Teacher deleted via API:', teacher.name);
+          this.toastService.info(`Teacher "${teacher.name}" deleted successfully.`);
+          this.loadTeachersFromAPI(); // Refresh list
+        },
+        error: (error) => {
+          console.error('❌ Failed to delete teacher:', error);
+          this.toastService.error('Failed to delete teacher');
+        }
+      });
     }
   }
 
   // Toggle teacher visibility
   toggleTeacherVisibility(teacher: Teacher) {
-    const index = this.teachers.findIndex(t => t.id === teacher.id);
-    if (index !== -1) {
-      this.teachers[index].isVisible = !this.teachers[index].isVisible;
-      this.saveTeachersToLocalStorage();
-      const status = this.teachers[index].isVisible ? 'visible' : 'hidden';
-      this.toastService.success(`Teacher "${teacher.name}" is now ${status} on user dashboard.`);
-    }
+    console.log('🔄 Toggling teacher visibility for:', teacher.name);
+    console.log('📊 Current status:', teacher.isActive ? 'Active' : 'Hidden');
+    
+    const newVisibility = !teacher.isActive;
+    console.log('🎯 New status will be:', newVisibility ? 'Active' : 'Hidden');
+    
+    this.teachersService.updateTeacher(teacher.id!, {
+      isActive: newVisibility
+    }).subscribe({
+      next: (updatedTeacher) => {
+        console.log('✅ Teacher visibility updated via API:', updatedTeacher);
+        console.log('📋 Updated teacher status:', updatedTeacher.isActive ? 'Active' : 'Hidden');
+        
+        const status = newVisibility ? 'active' : 'hidden';
+        this.toastService.success(`Teacher "${teacher.name}" is now ${status}.`);
+        this.loadTeachersFromAPI(); // Refresh list
+      },
+      error: (error) => {
+        console.error('❌ Failed to update teacher visibility:', error);
+        console.error('🔍 Error details:', {
+          status: error.status,
+          message: error.message,
+          error: error.error
+        });
+        this.toastService.error('Failed to update teacher visibility: ' + error.message);
+      }
+    });
   }
 
   openAddForm() {
@@ -200,6 +504,10 @@ export class TeacherComponent implements OnInit, AfterViewInit {
     this.showForm = true;
     this.isEditMode = false;
     this.selectedTeacher = null;
+  }
+
+  toggleDropdown() {
+    this.showDropdown = !this.showDropdown;
   }
 
   closeFormModal() {
@@ -227,13 +535,17 @@ export class TeacherComponent implements OnInit, AfterViewInit {
       this.filteredTeachers = this.teachers.filter(teacher =>
         teacher.name.toLowerCase().includes(searchLower) ||
         teacher.subject.toLowerCase().includes(searchLower) ||
-        teacher.qualification.toLowerCase().includes(searchLower) ||
         teacher.email.toLowerCase().includes(searchLower)
       );
     }
     this.totalItems = this.filteredTeachers.length;
     this.pageIndex = 0; // Reset to first page when filtering
+    
+    // CRITICAL: Update dataSource with new filtered data
+    this.dataSource.data = [...this.filteredTeachers];
+    
     console.log('Filtered teachers:', this.filteredTeachers.length);
+    console.log('DataSource updated with:', this.dataSource.data.length, 'teachers');
   }
 
   // Pagination methods
@@ -252,23 +564,7 @@ export class TeacherComponent implements OnInit, AfterViewInit {
 
 
 
-  // Teacher Notes Methods
-  loadTeacherNotesFromLocalStorage() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    const savedNotes = localStorage.getItem('teacherNotes');
-    if (savedNotes) {
-      this.teacherNotes = JSON.parse(savedNotes);
-    }
-  }
 
-  saveTeacherNotesToLocalStorage() {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('teacherNotes', JSON.stringify(this.teacherNotes));
-    }
-    // Update the shared service
-    this.dataService.updateNotes(this.teacherNotes);
-  }
 
   viewTeacherNotes(teacher: Teacher) {
     this.selectedTeacher = teacher;
@@ -286,40 +582,68 @@ export class TeacherComponent implements OnInit, AfterViewInit {
   }
 
   uploadTeacherNotes() {
+    console.log('=== Teacher Notes Upload Started ===');
+    
     if (!this.selectedNotesFile || !this.newNote.title || !this.selectedTeacher?.id) {
+      console.error('❌ Validation Failed - Missing required fields');
       this.toastService.error('Please fill all required fields and select a file.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const newId = this.teacherNotes.length > 0 
-        ? Math.max(...this.teacherNotes.map(n => n.id)) + 1 
-        : 1;
+    console.log('✅ Validation Passed');
+    console.log('File:', this.selectedNotesFile.name);
+    console.log('Title:', this.newNote.title);
+    console.log('Chapter:', this.newNote.chapter);
+    console.log('Teacher ID:', this.selectedTeacher.id);
 
-      const teacherNote: TeacherNote = {
-        id: newId,
-        teacherId: this.selectedTeacher!.id!,
-        title: this.newNote.title,
-        chapter: this.newNote.chapter,
-        fileName: this.selectedNotesFile!.name,
-        fileSize: (this.selectedNotesFile!.size / (1024 * 1024)).toFixed(2) + ' MB',
-        uploadDate: new Date().toLocaleDateString('en-CA'),
-        fileData: reader.result as string,
-        fileType: this.selectedNotesFile!.type
-      };
-
-      this.teacherNotes.unshift(teacherNote);
-      this.saveTeacherNotesToLocalStorage();
-      this.toastService.success(`Notes "${teacherNote.title}" uploaded successfully!`);
-      this.resetNotesForm();
+    const createTeacherNoteDto = {
+      title: this.newNote.title,
+      content: this.newNote.chapter || '',
+      subject: this.selectedTeacher.subject,
+      teacherId: this.selectedTeacher.id,
+      file: this.selectedNotesFile
     };
 
-    reader.onerror = () => {
-      this.toastService.error('Error reading file. Please try again.');
-    };
+    console.log('📤 Sending to API:', {
+      title: createTeacherNoteDto.title,
+      content: createTeacherNoteDto.content,
+      subject: createTeacherNoteDto.subject,
+      teacherId: createTeacherNoteDto.teacherId,
+      fileName: this.selectedNotesFile.name
+    });
 
-    reader.readAsDataURL(this.selectedNotesFile);
+    // Use the new API service
+    this.teacherNotesService.createTeacherNote(createTeacherNoteDto).subscribe({
+      next: (response) => {
+        console.log('✅ Teacher Notes Uploaded Successfully!');
+        console.log('API Response:', response);
+        
+        // Add to local array for immediate UI update
+        const teacherNote: TeacherNote = {
+          id: response.id,
+          teacherId: response.teacherId,
+          title: response.title,
+          chapter: response.content,
+          fileName: this.selectedNotesFile!.name,
+          fileSize: (this.selectedNotesFile!.size / (1024 * 1024)).toFixed(2) + ' MB',
+          uploadDate: new Date().toLocaleDateString('en-CA'),
+          fileType: this.selectedNotesFile!.type,
+          fileData: '' // Empty since file is stored on server
+        };
+
+        this.teacherNotes.unshift(teacherNote);
+        this.toastService.success(`Notes "${teacherNote.title}" uploaded successfully!`);
+        console.log('Success Message:', `Notes "${teacherNote.title}" uploaded successfully!`);
+        this.resetNotesForm();
+      },
+      error: (error) => {
+        console.error('❌ Teacher Notes Upload Failed!');
+        console.error('API Error:', error);
+        console.error('Error Status:', error.status);
+        console.error('Error Message:', error.message);
+        this.toastService.error(error.message || 'Failed to upload notes. Please try again.');
+      }
+    });
   }
 
   getTeacherNotes(): TeacherNote[] {
@@ -907,7 +1231,7 @@ export class TeacherComponent implements OnInit, AfterViewInit {
   deleteTeacherNote(note: TeacherNote) {
     if (confirm(`Are you sure you want to delete "${note.title}"?`)) {
       this.teacherNotes = this.teacherNotes.filter(n => n.id !== note.id);
-      this.saveTeacherNotesToLocalStorage();
+      // Note: In future, this should call API to delete teacher notes
       this.toastService.info(`Notes "${note.title}" deleted successfully.`);
     }
   }
@@ -926,9 +1250,22 @@ export class TeacherComponent implements OnInit, AfterViewInit {
     if (teacher.profileImage && 
         teacher.profileImage.trim() !== '' && 
         !teacher.profileImage.includes('placeholder') &&
-        !teacher.profileImage.includes('via.placeholder') &&
-        teacher.profileImage.startsWith('data:image/')) {
-      return teacher.profileImage;
+        !teacher.profileImage.includes('via.placeholder')) {
+      
+      // If it's a base64 image, return it directly
+      if (teacher.profileImage.startsWith('data:image/')) {
+        return teacher.profileImage;
+      }
+      
+      // If it's a server path, prepend the API URL
+      if (teacher.profileImage.startsWith('/uploads/')) {
+        return environment.apiUrl.replace('/api', '') + teacher.profileImage;
+      }
+      
+      // If it's already a full URL, return it
+      if (teacher.profileImage.startsWith('http')) {
+        return teacher.profileImage;
+      }
     }
     
     // Otherwise, determine gender from name and return appropriate avatar
@@ -974,181 +1311,66 @@ export class TeacherComponent implements OnInit, AfterViewInit {
 
   clearExistingSampleData() {
     if (isPlatformBrowser(this.platformId)) {
-      // Check if there's sample data and clear it ONLY ONCE
-      const sampleDataCleared = localStorage.getItem('sampleDataCleared');
-      if (!sampleDataCleared) {
-        const savedTeachers = localStorage.getItem('teachers');
-        if (savedTeachers) {
-          const teachers = JSON.parse(savedTeachers);
-          // Check if it contains sample data (by checking for sample emails)
-          const hasSampleData = teachers.some((teacher: Teacher) => 
-            teacher.email && teacher.email.includes('@school.edu')
-          );
-          
-          if (hasSampleData) {
-            // Clear sample data
-            localStorage.removeItem('teachers');
-            localStorage.removeItem('teacherNotes');
-          }
+      console.log('🧹 Clearing ALL localStorage teacher data...');
+      
+      // Clear all teacher-related localStorage data
+      const keysToRemove = [
+        'teachers',
+        'teacherNotes',
+        'teacherVisibility',
+        'teacherVisibilityInitialized',
+        'sampleDataCleared',
+        'sampleTeachersAdded',
+        'uploadedNotes',
+        'recentNotes'
+      ];
+      
+      keysToRemove.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+          console.log(`🗑️ Removed localStorage key: ${key}`);
         }
-        // Mark that sample data has been cleared
-        localStorage.setItem('sampleDataCleared', 'true');
+      });
+      
+      // Also clear any keys that might contain teacher data
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.toLowerCase().includes('teacher') && key !== 'auth_token' && key !== 'currentUser')) {
+          localStorage.removeItem(key);
+          console.log(`🗑️ Removed localStorage key: ${key}`);
+        }
       }
+      
+      console.log('✅ All localStorage teacher data cleared - will load from API only');
     }
   }
 
-  addSampleTeachers() {
-    // Only add sample teachers if localStorage is completely empty
-    if (!isPlatformBrowser(this.platformId)) return;
+  // Format date for display
+  formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
     
-    const existingTeachers = localStorage.getItem('teachers');
-    if (existingTeachers) {
-      console.log('Teachers already exist in localStorage, skipping sample data');
-      return;
-    }
-
-    const sampleTeachers: Teacher[] = [
-      {
-        id: 1,
-        name: 'Ahmed Ali',
-        qualification: 'M.Sc Computer Science',
-        subject: 'Computer Science',
-        email: 'ahmed.ali@gmail.com',
-        profileImage: '',
-        isVisible: true
-      },
-      {
-        id: 2,
-        name: 'Fatima Khan',
-        qualification: 'M.A Mathematics',
-        subject: 'Mathematics',
-        email: 'fatima.khan@gmail.com',
-        profileImage: '',
-        isVisible: true
-      },
-      {
-        id: 3,
-        name: 'Hassan Malik',
-        qualification: 'M.Sc Physics',
-        subject: 'Physics',
-        email: 'hassan.malik@gmail.com',
-        profileImage: '',
-        isVisible: true
-      },
-      {
-        id: 4,
-        name: 'Aisha Siddique',
-        qualification: 'M.A English Literature',
-        subject: 'English',
-        email: 'aisha.siddique@gmail.com',
-        profileImage: '',
-        isVisible: true
-      },
-      {
-        id: 5,
-        name: 'Omar Farooq',
-        qualification: 'M.Sc Chemistry',
-        subject: 'Chemistry',
-        email: 'omar.farooq@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 6,
-        name: 'Zainab Ahmed',
-        qualification: 'M.A History',
-        subject: 'History',
-        email: 'zainab.ahmed@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 7,
-        name: 'Bilal Sheikh',
-        qualification: 'M.Sc Biology',
-        subject: 'Biology',
-        email: 'bilal.sheikh@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 8,
-        name: 'Mariam Qureshi',
-        qualification: 'M.A Geography',
-        subject: 'Geography',
-        email: 'mariam.qureshi@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 9,
-        name: 'Tariq Hussain',
-        qualification: 'M.Com Business',
-        subject: 'Business Studies',
-        email: 'tariq.hussain@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 10,
-        name: 'Sana Malik',
-        qualification: 'M.A Psychology',
-        subject: 'Psychology',
-        email: 'sana.malik@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 11,
-        name: 'Usman Khan',
-        qualification: 'M.Sc Statistics',
-        subject: 'Statistics',
-        email: 'usman.khan@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 12,
-        name: 'Hina Ali',
-        qualification: 'M.A Sociology',
-        subject: 'Sociology',
-        email: 'hina.ali@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 13,
-        name: 'Kamran Raza',
-        qualification: 'M.Sc Economics',
-        subject: 'Economics',
-        email: 'kamran.raza@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 14,
-        name: 'Nadia Iqbal',
-        qualification: 'M.A Political Science',
-        subject: 'Political Science',
-        email: 'nadia.iqbal@gmail.com',
-        profileImage: '',
-        isVisible: false
-      },
-      {
-        id: 15,
-        name: 'Faisal Ahmed',
-        qualification: 'M.Sc Environmental Science',
-        subject: 'Environmental Science',
-        email: 'faisal.ahmed@gmail.com',
-        profileImage: '',
-        isVisible: false
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
       }
-    ];
-
-    this.teachers = sampleTeachers;
-    this.saveTeachersToLocalStorage();
-    console.log('Added sample teachers for pagination testing:', this.teachers.length);
+      
+      // Format as: Apr 24, 2026 at 3:02 PM
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }) + ' at ' + date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
   }
-
 
 }

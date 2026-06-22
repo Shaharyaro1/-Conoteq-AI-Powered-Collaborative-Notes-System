@@ -1,6 +1,11 @@
 <div class="notes-container">
-  <div class="header-section">
+  <!-- Header -->
+  <div class="header">
     <h1>Review Uploaded Notes</h1>
+  </div>
+  
+  <!-- Stats Cards Section -->
+  <div class="stats-section">
     <div class="stats-cards">
       <div class="stat-card pending">
         <div class="stat-icon">
@@ -48,10 +53,11 @@
             <th>Notes Name</th>
             <th>Subject</th>
             <th>Teacher Name</th>
+            <th>User Name</th>
             <th>File Name</th>
             <th>File Size</th>
             <th>Upload Date</th>
-                <th>Action</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -76,6 +82,7 @@
             <td><strong>{{ note.notesName }}</strong></td>
             <td>{{ note.subject }}</td>
             <td>{{ note.teacherName }}</td>
+            <td><strong>{{ note.userName || 'Unknown User' }}</strong></td>
             <td>
               <div class="file-name">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -85,7 +92,7 @@
               </div>
             </td>
             <td>{{ note.fileSize }}</td>
-            <td>{{ note.uploadDate }}</td>
+            <td>{{ formatDate(note.uploadDate) }}</td>
             <td>
               <div class="action-buttons">
                 <button 
@@ -188,7 +195,7 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Upload Date:</span>
-          <span class="detail-value">{{ selectedNote.uploadDate }}</span>
+          <span class="detail-value">{{ formatDate(selectedNote.uploadDate) }}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Status:</span>
@@ -205,6 +212,49 @@
         </button>
         <button class="btn-modal btn-reject" (click)="rejectNote(selectedNote!); closeViewModal()">
           Reject
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rejection Reason Modal -->
+  <div class="modal-overlay" *ngIf="showRejectionModal" (click)="closeRejectionModal()">
+    <div class="modal-content rejection-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Reject Notes</h2>
+        <button class="btn-close" (click)="closeRejectionModal()">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="noteToReject">
+        <div class="rejection-info">
+          <p><strong>Notes:</strong> {{ noteToReject.notesName }}</p>
+          <p><strong>User:</strong> {{ noteToReject.userName || 'Unknown User' }}</p>
+        </div>
+        <div class="form-group">
+          <label for="rejectionReason">Rejection Reason <span class="required">*</span></label>
+          <textarea 
+            id="rejectionReason"
+            [(ngModel)]="rejectionReason" 
+            placeholder="Please provide a clear reason for rejecting these notes..."
+            rows="4"
+            class="rejection-textarea"
+            maxlength="500">
+          </textarea>
+          <div class="char-count">{{ rejectionReason.length }}/500</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal btn-secondary" (click)="closeRejectionModal()">
+          Cancel
+        </button>
+        <button 
+          class="btn-modal btn-reject" 
+          (click)="confirmRejectNote()"
+          [disabled]="!rejectionReason.trim()">
+          Reject Notes
         </button>
       </div>
     </div>

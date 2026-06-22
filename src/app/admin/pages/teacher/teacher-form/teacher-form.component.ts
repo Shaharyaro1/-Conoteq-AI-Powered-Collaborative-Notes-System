@@ -5,10 +5,15 @@ import { FormsModule } from '@angular/forms';
 interface Teacher {
   id?: number;
   name: string;
-  qualification: string;
+  qualification?: string;
   subject: string;
   email: string;
-  profileImage: string;
+  phone?: string;
+  bio?: string;
+  profileImage?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  notesCount?: number;
 }
 
 @Component({
@@ -29,7 +34,8 @@ export class TeacherFormComponent {
     qualification: '',
     subject: '',
     email: '',
-    profileImage: ''
+    profileImage: '',
+    isActive: true
   };
 
   emailUsername: string = '';
@@ -85,13 +91,24 @@ export class TeacherFormComponent {
     this.updatePreview();
   }
 
-  // Email input handler
+  // Email input handler with validation
   onEmailInput() {
     // Remove any spaces and convert to lowercase
     this.emailUsername = this.emailUsername.replace(/\s/g, '').toLowerCase();
     
+    // Validate username format (only alphanumeric, dots, underscores)
+    const usernameRegex = /^[a-zA-Z0-9._]*$/;
+    if (!usernameRegex.test(this.emailUsername)) {
+      // Remove invalid characters
+      this.emailUsername = this.emailUsername.replace(/[^a-zA-Z0-9._]/g, '');
+    }
+    
     // Update the full email
-    this.teacher.email = this.emailUsername + '@gmail.com';
+    if (this.emailUsername) {
+      this.teacher.email = this.emailUsername + '@gmail.com';
+    } else {
+      this.teacher.email = '';
+    }
   }
 
   updatePreview() {
@@ -133,27 +150,48 @@ export class TeacherFormComponent {
   }
 
   onSubmit() {
-    // Ensure email is properly set
-    if (this.emailUsername) {
-      this.teacher.email = this.emailUsername + '@gmail.com';
+    // Validate and set email properly
+    if (this.emailUsername && this.emailUsername.trim()) {
+      const username = this.emailUsername.trim();
+      
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9._]+$/;
+      if (!usernameRegex.test(username)) {
+        alert('Username can only contain letters, numbers, dots, and underscores');
+        return;
+      }
+      
+      this.teacher.email = username + '@gmail.com';
+    } else if (!this.teacher.email || !this.teacher.email.includes('@')) {
+      // If no username and no valid email, show error
+      alert('Please enter a valid email username');
+      return;
     }
     
     console.log('Form submission attempt:', this.teacher);
     
-    if (this.teacher.name && this.teacher.qualification && this.teacher.subject && this.teacher.email) {
-      console.log('Form validation passed, emitting teacher data:', this.teacher);
-      alert('Form submitted successfully! Check the table.'); // Temporary debug
-      this.formSubmit.emit(this.teacher);
-      this.resetForm();
-    } else {
+    // Validate required fields
+    if (!this.teacher.name || !this.teacher.qualification || !this.teacher.subject || !this.teacher.email) {
       console.log('Form validation failed:', {
         name: this.teacher.name,
         qualification: this.teacher.qualification,
         subject: this.teacher.subject,
         email: this.teacher.email
       });
-      alert('Form validation failed! Please fill all required fields.'); // Temporary debug
+      alert('Please fill all required fields (Name, Qualification, Subject, Email)');
+      return;
     }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.teacher.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    console.log('Form validation passed, emitting teacher data:', this.teacher);
+    this.formSubmit.emit(this.teacher);
+    this.resetForm();
   }
 
   closeForm() {
@@ -167,7 +205,8 @@ export class TeacherFormComponent {
       qualification: '',
       subject: '',
       email: '',
-      profileImage: ''
+      profileImage: '',
+      isActive: true
     };
     this.emailUsername = '';
     this.profilePreview = 'https://via.placeholder.com/150/7c3aed/ffffff?text=Upload+Photo';

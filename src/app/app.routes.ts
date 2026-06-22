@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './auth/login/login.component';
 import { SignupComponent } from './auth/signup/signup.component';
+import { NoAuthGuard } from './shared/guards/no-auth.guard';
+import { AuthGuard } from './shared/guards/auth.guard';
 import { UserLayoutComponent } from './user/user-layout/user-layout.component';
 import { UserDashboardComponent } from './user/pages/user-dashboard/user-dashboard.component';
 import { UploadNotesComponent } from './user/pages/upload-notes/upload-notes.component';
@@ -9,6 +11,7 @@ import { SettingsComponent } from './user/pages/settings/settings.component';
 import { ThemeComponent } from './user/pages/theme/theme.component';
 import { TeacherNotesComponent } from './user/pages/teacher-notes/teacher-notes.component';
 import { ProfileComponent } from './user/pages/profile/profile.component';
+
 import { AdminLayoutComponent } from './admin/admin-layout/admin-layout.component';
 import { AdminDashboardComponent } from './admin/pages/admin-dashboard/admin-dashboard.component';
 import { NotesComponent } from './admin/pages/notes/notes.component';
@@ -19,11 +22,12 @@ import { AdminThemeComponent } from './admin/pages/theme/theme.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/auth/login', pathMatch: 'full' },
-  { path: 'auth/login', component: LoginComponent },
-  { path: 'auth/signup', component: SignupComponent },
+  { path: 'auth/login', component: LoginComponent, canActivate: [NoAuthGuard] },
+  { path: 'auth/signup', component: SignupComponent, canActivate: [NoAuthGuard] },
   { 
     path: 'user',
     component: UserLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: UserDashboardComponent },
@@ -38,6 +42,7 @@ export const routes: Routes = [
   { 
     path: 'admin',
     component: AdminLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: AdminDashboardComponent },

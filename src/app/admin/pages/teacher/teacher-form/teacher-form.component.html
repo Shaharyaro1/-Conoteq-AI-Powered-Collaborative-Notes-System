@@ -14,7 +14,7 @@
       <label class="form-label">Profile Picture</label>
       <div class="profile-upload">
         <div class="profile-preview">
-          <img [src]="profilePreview" alt="Profile" class="profile-image">
+          <img [src]="profilePreview" alt="" class="profile-image">
           <div class="upload-overlay" (click)="fileInput.click()">
             <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
               <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
@@ -47,9 +47,6 @@
         (input)="onNameInput($event)"
         (keypress)="validateNameInput($event)"
         required>
-      <div class="validation-message success" *ngIf="teacher.name">
-        ✓ Name looks good!
-      </div>
     </div>
 
     <!-- Qualification -->
@@ -63,7 +60,7 @@
         class="form-input"
         [(ngModel)]="teacher.qualification"
         name="qualification"
-        placeholder="e.g., M.Sc, PhD in Computer Science"
+        placeholder="e.g., PhD, MS, BS"
         required>
     </div>
 
@@ -110,9 +107,6 @@
           (input)="onEmailInput()"
           required>
         <span class="email-suffix">&#64;gmail.com</span>
-      </div>
-      <div class="validation-message success" *ngIf="emailUsername">
-        ✓ Email: {{ emailUsername }}&#64;gmail.com
       </div>
     </div>
 

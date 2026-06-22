@@ -58,7 +58,12 @@
 }
 
 .notification-bell:hover {
-  transform: translateY(0px);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.notification-bell.has-notifications {
+  animation: bell-ring 2s ease-in-out infinite;
 }
 
 .notification-bell svg {
@@ -70,6 +75,54 @@
   transform: scale(1.15) rotate(15deg);
 }
 
+/* Red Badge Count - Simple and Clean */
+.notification-badge-count {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 4px;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.7);
+  }
+}
+
+@keyframes bell-ring {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  10%, 30% {
+    transform: rotate(-10deg);
+  }
+  20%, 40% {
+    transform: rotate(10deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Legacy badge styles (kept for compatibility) */
 .notification-badge {
   position: absolute;
   top: 0.25rem;
@@ -342,6 +395,11 @@
   transition: all 0.3s ease;
   position: relative;
   cursor: pointer;
+}
+
+.notification-item.read {
+  opacity: 0.6;
+  background: #f8f9fa;
 }
 
 .notification-item:hover {

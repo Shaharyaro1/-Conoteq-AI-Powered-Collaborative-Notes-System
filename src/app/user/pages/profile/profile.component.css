@@ -1,21 +1,25 @@
-.profile-container {
+.dashboard {
   padding: 2rem;
   background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
   min-height: calc(100vh - 72px);
 }
 
-.profile-container h1 {
-  color: #1f2937;
+/* Header */
+.header {
   margin-bottom: 2rem;
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
 }
 
-.profile-content {
+.header h1 {
+  color: #7c3aed;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.dashboard-content {
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 2rem;
@@ -244,7 +248,7 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .profile-content {
+  .dashboard-content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
@@ -256,11 +260,11 @@
 }
 
 @media (max-width: 768px) {
-  .profile-container {
+  .dashboard {
     padding: 1rem;
   }
 
-  .profile-container h1 {
+  .header h1 {
     font-size: 1.75rem;
   }
 
@@ -291,11 +295,11 @@
 }
 
 @media (max-width: 480px) {
-  .profile-container {
+  .dashboard {
     padding: 0.75rem;
   }
 
-  .profile-container h1 {
+  .header h1 {
     font-size: 1.5rem;
   }
 
@@ -317,4 +321,133 @@
     padding: 1rem;
     border-radius: 16px;
   }
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #7c3aed;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+/* Error and Success Messages */
+.error-message,
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.error-message {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.success-message {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.error-message svg,
+.success-message svg {
+  flex-shrink: 0;
+}
+
+/* User Status and Role Styles */
+.user-role {
+  display: inline-block;
+  background: #ede9fe;
+  color: #7c3aed;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.user-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.user-status.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.user-status.inactive {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.user-status.blocked {
+  background: #fecaca;
+  color: #dc2626;
+}
+
+/* Readonly Field Styles */
+.readonly-field {
+  background: #f9fafb !important;
+  color: #6b7280 !important;
+  cursor: not-allowed;
+}
+
+.readonly-field.active {
+  color: #16a34a !important;
+  font-weight: 600;
+}
+
+.readonly-field.inactive {
+  color: #d97706 !important;
+  font-weight: 600;
+}
+
+.readonly-field.blocked {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
+/* Button Disabled State */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }

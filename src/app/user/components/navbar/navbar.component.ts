@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../../auth/auth.service';
+import { AuthService } from '../../../shared/services/auth.service.new';
 import { NotificationService } from '../../../shared/services/notification.service';
-import { ApiService, NotificationUpdate } from '../../../shared/services/api.service';
+import { ApiService, NotificationUpdate, ApiNotification } from '../../../shared/services/api.service.new';
 import { Subscription } from 'rxjs';
 
 interface Note {
@@ -18,14 +18,15 @@ interface Note {
 }
 
 interface NotificationItem {
-  id: string;
-  type: 'approved' | 'rejected';
+  id: number;
+  type: string;
   title: string;
   message: string;
   time: string;
-  noteId: number;
-  noteName: string;
-  read?: boolean;
+  noteId?: number;
+  noteName?: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 @Component({
@@ -37,7 +38,7 @@ interface NotificationItem {
 })
 
 export class NavbarComponent implements OnInit, OnDestroy {
-  userName = 'John Doe';
+  userName = '';
   userInitial = '';
   showDropdown = false;
   showNotifications = false;
@@ -46,8 +47,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   rejectedCount = 0;
   notifications: NotificationItem[] = [];
   private subscriptions: Subscription[] = [];
-  private storageListener: any;
-  private lastStatusCheck: { [key: number]: string } = {};
 
   constructor(
     private authService: AuthService, 
@@ -58,16 +57,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    const currentUser = this.authService.getCurrentUser();
-    if (currentUser) {
-      // Use username if name is not available
-      this.userName = currentUser.name || currentUser.username || 'User';
-      this.userInitial = this.userName.charAt(0).toUpperCase();
-    }
+    // Subscribe to current user changes
+    const userSubscription = this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.userName = user.username || 'User';
+        this.userInitial = this.userName.charAt(0).toUpperCase();
+      } else {
+        this.userName = '';
+        this.userInitial = '';
+      }
+    });
 
-    // Subscribe to API service notification updates
-    const notificationSubscription = this.apiService.notificationUpdates$.subscribe(updates => {
-      this.handleNotificationUpdates(updates);
+    // Subscribe to API notifications
+    const apiNotificationsSubscription = this.apiService.notifications$.subscribe(notifications => {
+      this.handleApiNotifications(notifications);
     });
 
     // Subscribe to notification service
@@ -77,218 +80,70 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.rejectedCount = data.rejectedCount;
     });
 
-    this.subscriptions.push(notificationSubscription, serviceSubscription);
+    this.subscriptions.push(userSubscription, apiNotificationsSubscription, serviceSubscription);
 
     if (isPlatformBrowser(this.platformId)) {
-      // Load existing notifications
-      this.loadExistingNotifications();
+      // Load notifications from API
+      this.loadNotifications();
       
-      // Initialize status tracking
-      this.initializeStatusTracking();
-      this.updateNotificationCounts();
-
-      // Listen for localStorage changes
-      this.storageListener = (e: StorageEvent) => {
-        if (e.key === 'uploadedNotes') {
-          this.updateNotificationCounts();
+      // Add document click listener to close dropdowns when clicking outside
+      document.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement;
+        const navbar = document.querySelector('.navbar');
+        
+        // If click is outside navbar, close all dropdowns
+        if (navbar && !navbar.contains(target)) {
+          this.closeAllDropdowns();
         }
-      };
-      window.addEventListener('storage', this.storageListener);
+      });
     }
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
-    
-    if (isPlatformBrowser(this.platformId) && this.storageListener) {
-      window.removeEventListener('storage', this.storageListener);
-    }
   }
 
-  initializeStatusTracking() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    const savedNotes = localStorage.getItem('uploadedNotes');
-    const existingCheck = localStorage.getItem('userLastStatusCheck');
-    
-    if (savedNotes) {
-      const notes: Note[] = JSON.parse(savedNotes);
-      
-      // If no existing check, initialize with current status
-      if (!existingCheck) {
-        notes.forEach(note => {
-          // Track all notes including pending ones
-          this.lastStatusCheck[note.id] = note.status;
-        });
-        localStorage.setItem('userLastStatusCheck', JSON.stringify(this.lastStatusCheck));
-      } else {
-        // Load existing check
-        this.lastStatusCheck = JSON.parse(existingCheck);
-        
-        // Add any new notes that aren't tracked yet (keep as pending)
-        notes.forEach(note => {
-          if (!(note.id in this.lastStatusCheck)) {
-            this.lastStatusCheck[note.id] = note.status;
-            // Save immediately to track new uploads
-            localStorage.setItem('userLastStatusCheck', JSON.stringify(this.lastStatusCheck));
-          }
-        });
-      }
-    }
+  private loadNotifications() {
+    // Notifications are automatically loaded by the API service
+    // and will be received through the notifications$ subscription
   }
 
-  updateNotificationCounts() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    const savedNotes = localStorage.getItem('uploadedNotes');
-    const lastCheck = localStorage.getItem('userLastStatusCheck');
-    const savedNotifications = localStorage.getItem('userNotifications');
-    
-    if (savedNotes) {
-      const notes: Note[] = JSON.parse(savedNotes);
-      const previousCheck = lastCheck ? JSON.parse(lastCheck) : {};
-      
-      let newApproved = 0;
-      let newRejected = 0;
-      let totalUpdates = 0;
-      const newNotifications: NotificationItem[] = [];
-      const updatedStatusCheck: { [key: number]: string } = { ...previousCheck };
+  private handleApiNotifications(notifications: ApiNotification[]) {
+    // Convert API notifications to display format
+    this.notifications = notifications.map(notification => ({
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      time: this.getTimeAgo(notification.createdAt),
+      noteId: notification.noteId,
+      noteName: notification.noteName,
+      isRead: notification.isRead,
+      createdAt: notification.createdAt
+    }));
 
-      notes.forEach(note => {
-        const previousStatus = previousCheck[note.id];
-        
-        // Debug logging (remove in production)
-        if (previousStatus !== note.status) {
-          console.log(`[Notification] Status change detected for "${note.notesName}":`, 
-            `${previousStatus} -> ${note.status}`);
-        }
-        
-        // Check if status changed from pending to approved/rejected
-        if (previousStatus === 'pending' && note.status === 'approved') {
-          newApproved++;
-          totalUpdates++;
-          
-          console.log(`[Notification] Creating APPROVED notification for "${note.notesName}"`);
-          
-          // Create notification
-          newNotifications.push({
-            id: `${note.id}-approved-${Date.now()}`,
-            type: 'approved',
-            title: 'Notes Approved! ✅',
-            message: `Your notes "${note.notesName}" has been approved by admin.`,
-            time: this.getTimeAgo(new Date()),
-            noteId: note.id,
-            noteName: note.notesName,
-            read: false
-          });
-          
-          // Update status check immediately
-          updatedStatusCheck[note.id] = 'approved';
-        } else if (previousStatus === 'pending' && note.status === 'rejected') {
-          newRejected++;
-          totalUpdates++;
-          
-          console.log(`[Notification] Creating REJECTED notification for "${note.notesName}"`);
-          
-          // Create notification
-          newNotifications.push({
-            id: `${note.id}-rejected-${Date.now()}`,
-            type: 'rejected',
-            title: 'Notes Rejected ❌',
-            message: `Your notes "${note.notesName}" has been rejected by admin.`,
-            time: this.getTimeAgo(new Date()),
-            noteId: note.id,
-            noteName: note.notesName,
-            read: false
-          });
-          
-          // Update status check immediately
-          updatedStatusCheck[note.id] = 'rejected';
-        } else {
-          // Keep current status in tracking
-          updatedStatusCheck[note.id] = note.status;
-        }
-      });
-
-      // Only update if there are new notifications
-      if (newNotifications.length > 0) {
-        // Load existing notifications and merge with new ones
-        if (savedNotifications) {
-          const existingNotifications: NotificationItem[] = JSON.parse(savedNotifications);
-          this.notifications = [...newNotifications, ...existingNotifications];
-        } else {
-          this.notifications = newNotifications;
-        }
-
-        // Save notifications to localStorage
-        localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
-        
-        // Update status check to prevent duplicate notifications
-        localStorage.setItem('userLastStatusCheck', JSON.stringify(updatedStatusCheck));
-        this.lastStatusCheck = updatedStatusCheck;
-      } else {
-        // Load existing notifications even if no new ones
-        if (savedNotifications) {
-          this.notifications = JSON.parse(savedNotifications);
-        }
-      }
-
-      // Count total unread notifications
-      const totalUnread = this.notifications.filter(n => !n.read).length;
-      
-      this.approvedCount = this.notifications.filter(n => n.type === 'approved' && !n.read).length;
-      this.rejectedCount = this.notifications.filter(n => n.type === 'rejected' && !n.read).length;
-      this.statusUpdatesCount = totalUnread;
-
-      console.log(`[Navbar] Updated counts - Total: ${totalUnread}, Approved: ${this.approvedCount}, Rejected: ${this.rejectedCount}`);
-
-      // Update notification service
-      this.notificationService.updateUserNotifications({
-        pendingCount: 0,
-        statusUpdatesCount: totalUnread,
-        approvedCount: this.approvedCount,
-        rejectedCount: this.rejectedCount
-      });
-    } else {
-      // Load existing notifications even if no notes
-      if (savedNotifications) {
-        this.notifications = JSON.parse(savedNotifications);
-      }
-      
-      this.approvedCount = 0;
-      this.rejectedCount = 0;
-      this.statusUpdatesCount = 0;
-
-      // Update notification service
-      this.notificationService.updateUserNotifications({
-        pendingCount: 0,
-        statusUpdatesCount: 0,
-        approvedCount: 0,
-        rejectedCount: 0
-      });
-    }
+    // Update counts
+    this.updateNotificationCounts();
   }
 
-  // Call this when user visits upload-notes page to mark notifications as seen
-  markNotificationsAsSeen() {
-    if (!isPlatformBrowser(this.platformId)) return;
+  private updateNotificationCounts() {
+    const unreadNotifications = this.notifications.filter(n => !n.isRead);
     
-    const savedNotes = localStorage.getItem('uploadedNotes');
-    if (savedNotes) {
-      const notes: Note[] = JSON.parse(savedNotes);
-      const newStatusCheck: { [key: number]: string } = {};
-      
-      notes.forEach(note => {
-        newStatusCheck[note.id] = note.status;
-      });
-      
-      localStorage.setItem('userLastStatusCheck', JSON.stringify(newStatusCheck));
-      this.lastStatusCheck = newStatusCheck;
-      this.statusUpdatesCount = 0;
-      this.approvedCount = 0;
-      this.rejectedCount = 0;
-    }
+    this.statusUpdatesCount = unreadNotifications.length;
+    this.approvedCount = unreadNotifications.filter(n => n.type === 'approved').length;
+    this.rejectedCount = unreadNotifications.filter(n => n.type === 'rejected').length;
+
+    console.log(`[Navbar] Updated counts - Total: ${this.statusUpdatesCount}, Approved: ${this.approvedCount}, Rejected: ${this.rejectedCount}`);
+
+    // Update notification service
+    this.notificationService.updateUserNotifications({
+      pendingCount: 0,
+      statusUpdatesCount: this.statusUpdatesCount,
+      approvedCount: this.approvedCount,
+      rejectedCount: this.rejectedCount
+    });
   }
+
 
   toggleDropdown() {
     this.showDropdown = !this.showDropdown;
@@ -299,25 +154,41 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.showDropdown = false;
   }
 
+  // Close all dropdowns
+  closeAllDropdowns() {
+    this.showDropdown = false;
+    this.showNotifications = false;
+  }
+
   logout() {
+    console.log('🚪 User Navbar: Logout clicked');
     this.authService.logout();
-    this.router.navigate(['/auth/login']);
+    // Auth service will handle the redirect to login
   }
 
   goToProfile() {
     this.router.navigate(['/user/profile']);
-    this.showDropdown = false;
+    this.closeAllDropdowns();
   }
 
   goToSettings() {
     this.router.navigate(['/user/settings']);
-    this.showDropdown = false;
+    this.closeAllDropdowns();
   }
 
-  // Notification dropdown methods
+  // Notification bell click - Navigate to notes page directly
+  onNotificationBellClick() {
+    console.log('🔔 Notification bell clicked - navigating to notes page');
+    // Navigate to upload-notes page where user can see all their notes with status
+    this.router.navigate(['/user/upload-notes']);
+    // Mark notifications as seen
+    this.markNotificationsAsSeen();
+  }
+
+  // Legacy methods (kept for compatibility)
   toggleNotifications() {
-    this.showNotifications = !this.showNotifications;
-    this.showDropdown = false; // Close user dropdown if open
+    // Now redirects to notes page instead of showing dropdown
+    this.onNotificationBellClick();
   }
 
   closeNotifications() {
@@ -331,8 +202,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   getNotificationBadgeClass(): string {
     if (this.notifications.length === 0) return '';
     
-    const hasApproved = this.notifications.some(n => n.type === 'approved');
-    const hasRejected = this.notifications.some(n => n.type === 'rejected');
+    const unreadNotifications = this.notifications.filter(n => !n.isRead);
+    const hasApproved = unreadNotifications.some(n => n.type === 'approved');
+    const hasRejected = unreadNotifications.some(n => n.type === 'rejected');
     
     if (hasApproved && hasRejected) return 'mixed';
     if (hasApproved) return 'has-approved';
@@ -345,62 +217,40 @@ export class NavbarComponent implements OnInit, OnDestroy {
     return `notification-${type}`;
   }
 
-  dismissNotification(notificationId: string) {
-    this.notifications = this.notifications.filter(n => n.id !== notificationId);
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
-    }
-    this.updateNotificationCounts();
-  }
-
-  clearAllNotifications() {
-    this.notifications = [];
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
-    }
-    this.updateNotificationCounts();
-  }
-
-  handleNotificationUpdates(updates: NotificationUpdate[]) {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    updates.forEach(update => {
-      console.log(`[Navbar] Received notification update:`, update);
-      
-      // Create notification item
-      const notification: NotificationItem = {
-        id: `${update.noteId}-${update.newStatus}-${Date.now()}`,
-        type: update.newStatus as 'approved' | 'rejected',
-        title: update.newStatus === 'approved' ? 'Notes Approved! ✅' : 'Notes Rejected ❌',
-        message: `Your notes "${update.noteName}" has been ${update.newStatus} by admin.`,
-        time: this.getTimeAgo(new Date(update.timestamp)),
-        noteId: update.noteId,
-        noteName: update.noteName,
-        read: false
-      };
-
-      // Add to notifications array
-      this.notifications.unshift(notification);
-      
-      // Save to localStorage
-      localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
-      
-      // Update counts
-      this.updateNotificationCounts();
-      
-      console.log(`[Navbar] Added notification for "${update.noteName}" - ${update.newStatus}`);
+  dismissNotification(notificationId: number) {
+    // Mark notification as read via API
+    this.apiService.markNotificationAsRead(notificationId).subscribe({
+      next: (success) => {
+        if (success) {
+          console.log(`[Navbar] Notification ${notificationId} marked as read`);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to mark notification as read:', error);
+      }
     });
   }
 
-  loadExistingNotifications() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    const savedNotifications = localStorage.getItem('userNotifications');
-    if (savedNotifications) {
-      this.notifications = JSON.parse(savedNotifications);
-      console.log(`[Navbar] Loaded ${this.notifications.length} existing notifications`);
-    }
+  clearAllNotifications() {
+    // Mark all notifications as read via API
+    this.apiService.markAllNotificationsAsRead().subscribe({
+      next: (success) => {
+        if (success) {
+          console.log('[Navbar] All notifications marked as read');
+        }
+      },
+      error: (error) => {
+        console.error('Failed to mark all notifications as read:', error);
+      }
+    });
   }
+
+
+  // Call this when user visits upload-notes page to mark notifications as seen
+  markNotificationsAsSeen() {
+    this.clearAllNotifications();
+  }
+
 
   getTimeAgo(date: Date | string): string {
     const targetDate = typeof date === 'string' ? new Date(date) : date;

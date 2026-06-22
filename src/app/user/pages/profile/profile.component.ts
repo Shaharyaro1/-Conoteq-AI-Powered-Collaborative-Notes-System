@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../shared/services/auth.service.new';
+import { UsersService } from '../../../shared/services/users.service';
 
 @Component({
   selector: 'app-profile',
@@ -11,50 +13,128 @@ import { FormsModule } from '@angular/forms';
 })
 export class ProfileComponent implements OnInit {
   userProfile = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+92 300 1234567',
-    address: 'Karachi, Pakistan',
-    bio: 'Computer Science student passionate about learning new technologies.'
+    id: 0,
+    name: '',
+    username: '',
+    email: '',
+    role: '',
+    status: '',
+    createdAt: '',
+    lastActive: ''
   };
 
+  originalProfile: any = {};
   isEditing = false;
+  isLoading = false;
+  errorMessage = '';
+  successMessage = '';
+
+  constructor(
+    private authService: AuthService,
+    private usersService: UsersService
+  ) {}
 
   ngOnInit() {
-    console.log('Profile component loaded!');
-    this.loadFromLocalStorage();
+    this.loadUserProfile();
   }
 
-  loadFromLocalStorage() {
-    console.log('Loading profile from localStorage...');
-    const saved = localStorage.getItem('userProfile');
-    if (saved) {
-      console.log('Found saved profile:', saved);
-      this.userProfile = JSON.parse(saved);
+  loadUserProfile() {
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    const currentUser = this.authService.getCurrentUserValue();
+    if (currentUser) {
+      this.usersService.getUser(currentUser.id).subscribe({
+        next: (user) => {
+          this.userProfile = {
+            id: user.id,
+            name: user.username, // Using username as name for now
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            createdAt: user.createdAt,
+            lastActive: user.lastActive
+          };
+          this.originalProfile = { ...this.userProfile };
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading profile:', error);
+          this.errorMessage = 'Failed to load profile data';
+          this.isLoading = false;
+        }
+      });
     } else {
-      console.log('No saved profile found, using defaults');
-      // Save default profile
-      this.saveToLocalStorage();
+      this.errorMessage = 'User not logged in';
+      this.isLoading = false;
     }
-  }
-
-  saveToLocalStorage() {
-    console.log('Saving profile to localStorage:', this.userProfile);
-    localStorage.setItem('userProfile', JSON.stringify(this.userProfile));
   }
 
   toggleEdit() {
     if (this.isEditing) {
-      // Save changes
-      this.saveToLocalStorage();
-      alert('Profile updated successfully!');
+      this.saveProfile();
+    } else {
+      this.isEditing = true;
     }
-    this.isEditing = !this.isEditing;
+  }
+
+  saveProfile() {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const updateData = {
+      username: this.userProfile.username,
+      email: this.userProfile.email
+    };
+
+    this.usersService.updateUser(this.userProfile.id, updateData).subscribe({
+      next: (updatedUser) => {
+        this.userProfile = {
+          id: updatedUser.id,
+          name: updatedUser.username,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          status: updatedUser.status,
+          createdAt: updatedUser.createdAt,
+          lastActive: updatedUser.lastActive
+        };
+        this.originalProfile = { ...this.userProfile };
+        
+        // Update the current user in auth service
+        this.authService.updateCurrentUser({
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          status: updatedUser.status,
+          createdAt: updatedUser.createdAt,
+          lastActive: updatedUser.lastActive
+        });
+        
+        this.isEditing = false;
+        this.isLoading = false;
+        this.successMessage = 'Profile updated successfully!';
+        
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      },
+      error: (error) => {
+        console.error('Error updating profile:', error);
+        this.errorMessage = 'Failed to update profile. Please try again.';
+        this.isLoading = false;
+      }
+    });
   }
 
   cancelEdit() {
+    this.userProfile = { ...this.originalProfile };
     this.isEditing = false;
-    this.loadFromLocalStorage(); // Reload original data
+    this.errorMessage = '';
+    this.successMessage = '';
   }
 
   getInitials(): string {
@@ -63,6 +143,18 @@ export class ProfileComponent implements OnInit {
       .map(n => n.charAt(0))
       .join('')
       .toUpperCase()
-      .substring(0, 2);
+      .substring(0, 2) || 'U';
+  }
+
+  formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 }

@@ -35,4 +35,16 @@
       <div *ngIf="item.hasDivider" class="menu-divider"></div>
     </ng-container>
   </div>
+  
+  <!-- Logout Button -->
+  <div class="sidebar-footer">
+    <!-- Divider above logout -->
+    <div class="menu-divider"></div>
+    <button class="logout-btn" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+    <!-- Divider below logout -->
+    <div class="menu-divider"></div>
+  </div>
 </aside>

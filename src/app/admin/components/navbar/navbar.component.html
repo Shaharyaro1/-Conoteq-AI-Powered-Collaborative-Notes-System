@@ -1,6 +1,6 @@
 <nav class="navbar">
   <div class="navbar-left">
-    <div class="logo">Admin Panel</div>
+    <div class="logo">ConoteQ Admin</div>
   </div>
   
   <div class="navbar-right">
@@ -14,7 +14,7 @@
       </div>
 
       <!-- Admin Notification Dropdown -->
-      <div class="notification-dropdown" *ngIf="showNotifications">
+      <div class="notification-dropdown" *ngIf="showNotifications" (click)="$event.stopPropagation()">
         <div class="notification-header">
           <h3>Notes Overview</h3>
           <button class="btn-view-notes" (click)="goToNotes()">
@@ -84,8 +84,8 @@
       </div>
     </div>
 
-    <!-- Backdrop for dropdown -->
-    <div class="dropdown-backdrop" *ngIf="showDropdown" (click)="closeDropdown()"></div>
+    <!-- Backdrop for dropdowns -->
+    <div class="dropdown-backdrop" *ngIf="showDropdown || showNotifications" (click)="closeAllDropdowns()"></div>
     
     <div class="user-menu" (click)="toggleDropdown()">
       <div class="user-circle">{{ adminInitial }}</div>

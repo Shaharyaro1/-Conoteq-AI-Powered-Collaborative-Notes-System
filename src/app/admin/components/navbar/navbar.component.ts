@@ -1,8 +1,10 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../../auth/auth.service';
+import { AuthService } from '../../../shared/services/auth.service.new';
 import { NotificationService } from '../../../shared/services/notification.service';
+import { ApiService } from '../../../shared/services/api.service.new';
+import { Subscription } from 'rxjs';
 
 interface Note {
   id: number;
@@ -24,7 +26,7 @@ interface Note {
   styleUrls: ['./navbar.component.css']
 })
 export class AdminNavbarComponent implements OnInit, OnDestroy {
-  adminName = 'Admin User';
+  adminName = '';
   adminInitial = '';
   showDropdown = false;
   showNotifications = false;
@@ -33,27 +35,55 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
   approvedCount = 0;
   rejectedCount = 0;
   private storageListener: any;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private authService: AuthService, 
     private router: Router,
     private notificationService: NotificationService,
+    private apiService: ApiService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
-  ngOnInit() {
-    const currentUser = this.authService.getCurrentUser();
-    if (currentUser) {
-      // Use username if name is not available
-      this.adminName = currentUser.name || currentUser.username || 'Admin';
-      this.adminInitial = this.adminName.charAt(0).toUpperCase();
+  // Listen for clicks outside the component
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event) {
+    const target = event.target as HTMLElement;
+    const navbar = target.closest('.navbar');
+    
+    // If click is outside navbar, close all dropdowns
+    if (!navbar) {
+      this.showDropdown = false;
+      this.showNotifications = false;
     }
+  }
+
+  // Listen for escape key
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: Event) {
+    this.showDropdown = false;
+    this.showNotifications = false;
+  }
+
+  ngOnInit() {
+    // Subscribe to current user changes
+    const userSubscription = this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.adminName = user.username || 'Admin';
+        this.adminInitial = this.adminName.charAt(0).toUpperCase();
+      } else {
+        this.adminName = '';
+        this.adminInitial = '';
+      }
+    });
+
+    this.subscriptions.push(userSubscription);
 
     if (isPlatformBrowser(this.platformId)) {
-      // Initial count
+      // Initial count from API
       this.updatePendingNotesCount();
 
-      // Listen for localStorage changes
+      // Listen for localStorage changes (for backward compatibility)
       this.storageListener = (e: StorageEvent) => {
         if (e.key === 'uploadedNotes') {
           this.updatePendingNotesCount();
@@ -61,19 +91,32 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
       };
       window.addEventListener('storage', this.storageListener);
 
-      // Also check periodically for same-tab updates
+      // Check periodically for real-time updates from API
       setInterval(() => {
         this.updatePendingNotesCount();
-      }, 2000);
+      }, 5000); // Check every 5 seconds for real-time updates
     }
 
     // Subscribe to notification service
-    this.notificationService.adminNotifications$.subscribe(data => {
+    const notificationSubscription = this.notificationService.adminNotifications$.subscribe(data => {
       this.pendingNotesCount = data.pendingCount;
+      this.approvedCount = data.approvedCount;
+      this.rejectedCount = data.rejectedCount;
     });
+    
+    // Subscribe to API notification updates
+    const apiNotificationSubscription = this.apiService.notificationUpdates$.subscribe(updates => {
+      console.log('📬 Admin navbar received notification updates:', updates);
+      // Refresh counts when notifications arrive
+      this.updatePendingNotesCount();
+    });
+    
+    this.subscriptions.push(notificationSubscription, apiNotificationSubscription);
   }
 
   ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    
     if (isPlatformBrowser(this.platformId) && this.storageListener) {
       window.removeEventListener('storage', this.storageListener);
     }
@@ -84,35 +127,72 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
   updatePendingNotesCount() {
     if (!isPlatformBrowser(this.platformId)) return;
     
-    const savedNotes = localStorage.getItem('uploadedNotes');
-    if (savedNotes) {
-      const notes: Note[] = JSON.parse(savedNotes);
-      this.pendingNotesCount = notes.filter(note => note.status === 'pending').length;
-      this.approvedCount = notes.filter(note => note.status === 'approved').length;
-      this.rejectedCount = notes.filter(note => note.status === 'rejected').length;
-      this.totalNotesCount = notes.length;
-      
-      // Update notification service
-      this.notificationService.updateAdminNotifications({
-        pendingCount: this.pendingNotesCount,
-        statusUpdatesCount: 0,
-        approvedCount: this.approvedCount,
-        rejectedCount: this.rejectedCount
-      });
-    } else {
-      this.pendingNotesCount = 0;
-      this.approvedCount = 0;
-      this.rejectedCount = 0;
-      this.totalNotesCount = 0;
-      
-      // Update notification service
-      this.notificationService.updateAdminNotifications({
-        pendingCount: 0,
-        statusUpdatesCount: 0,
-        approvedCount: 0,
-        rejectedCount: 0
-      });
-    }
+    console.log('🔄 Updating notes counts from API...');
+    
+    // Fetch notes from API instead of localStorage
+    this.apiService.getAllNotes().subscribe({
+      next: (response: any) => {
+        if (response.success && response.data) {
+          const notes: Note[] = response.data;
+          
+          this.pendingNotesCount = notes.filter(note => note.status === 'pending').length;
+          this.approvedCount = notes.filter(note => note.status === 'approved').length;
+          this.rejectedCount = notes.filter(note => note.status === 'rejected').length;
+          this.totalNotesCount = notes.length;
+          
+          console.log('✅ Notes counts updated:', {
+            pending: this.pendingNotesCount,
+            approved: this.approvedCount,
+            rejected: this.rejectedCount,
+            total: this.totalNotesCount
+          });
+          
+          // Update notification service
+          this.notificationService.updateAdminNotifications({
+            pendingCount: this.pendingNotesCount,
+            statusUpdatesCount: 0,
+            approvedCount: this.approvedCount,
+            rejectedCount: this.rejectedCount
+          });
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error fetching notes counts:', error);
+        
+        // Fallback to localStorage if API fails
+        const savedNotes = localStorage.getItem('uploadedNotes');
+        if (savedNotes) {
+          const notes: Note[] = JSON.parse(savedNotes);
+          this.pendingNotesCount = notes.filter(note => note.status === 'pending').length;
+          this.approvedCount = notes.filter(note => note.status === 'approved').length;
+          this.rejectedCount = notes.filter(note => note.status === 'rejected').length;
+          this.totalNotesCount = notes.length;
+          
+          console.log('⚠️ Using localStorage fallback for counts');
+          
+          // Update notification service
+          this.notificationService.updateAdminNotifications({
+            pendingCount: this.pendingNotesCount,
+            statusUpdatesCount: 0,
+            approvedCount: this.approvedCount,
+            rejectedCount: this.rejectedCount
+          });
+        } else {
+          // No data available
+          this.pendingNotesCount = 0;
+          this.approvedCount = 0;
+          this.rejectedCount = 0;
+          this.totalNotesCount = 0;
+          
+          this.notificationService.updateAdminNotifications({
+            pendingCount: 0,
+            statusUpdatesCount: 0,
+            approvedCount: 0,
+            rejectedCount: 0
+          });
+        }
+      }
+    });
   }
 
   toggleDropdown() {
@@ -124,9 +204,16 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
     this.showDropdown = false;
   }
 
+  // Close all dropdowns
+  closeAllDropdowns() {
+    this.showDropdown = false;
+    this.showNotifications = false;
+  }
+
   logout() {
+    console.log('🚪 Admin Navbar: Logout clicked');
     this.authService.logout();
-    this.router.navigate(['/auth/login']);
+    // Auth service will handle the redirect to login
   }
 
   goToSettings() {

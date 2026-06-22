@@ -1,35 +1,29 @@
 .upload-container {
-
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  min-height: 100%;
-  position: relative;
+  padding: 24px;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Layout is handled by user-layout component */
-
-.upload-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23667eea" fill-opacity="0.05"><circle cx="30" cy="30" r="2"/></g></svg>');
-  pointer-events: none;
+/* Header Styles - Matching Admin Dashboard */
+.header {
+  margin-bottom: 24px;
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid #e9ecef;
 }
 
-h1 {
-  color: #1f2937;
-  margin-bottom: 2rem;
-  font-size: 2.5rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.header h1 {
+  margin: 0;
+  color: #212529;
+  font-size: 28px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #6f42c1 0%, #007bff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  position: relative;
-  z-index: 1;
 }
 
 h2 {
@@ -1127,4 +1121,40 @@ input[list]::-webkit-calendar-picker-indicator {
     width: 12px;
     height: 12px;
   }
+}
+/* Rejection Reason Styles */
+.rejection-reason-row {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+}
+
+.rejection-reason-cell {
+  padding: 1rem !important;
+  border-top: none !important;
+}
+
+.rejection-reason-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.rejection-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.rejection-text {
+  color: #374151;
+  line-height: 1.5;
+}
+
+.rejection-text strong {
+  color: #ef4444;
+  font-weight: 600;
 }

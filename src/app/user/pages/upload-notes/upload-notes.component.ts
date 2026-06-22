@@ -3,7 +3,8 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../../shared/services/notification.service';
 import { NotesUpdateService } from '../../../shared/services/notes-update.service';
-import { ApiService, NotificationUpdate } from '../../../shared/services/api.service';
+import { ApiService, NotificationUpdate, ApiNote } from '../../../shared/services/api.service.new';
+import { AuthService } from '../../../shared/services/auth.service.new';
 import { Subscription } from 'rxjs';
 
 // Angular Material Imports
@@ -21,6 +22,7 @@ interface Note {
   status: 'pending' | 'approved' | 'rejected';
   fileData?: string; // Base64 encoded file data
   fileType?: string; // MIME type
+  rejectionReason?: string;
 }
 
 @Component({
@@ -92,6 +94,7 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
     private notificationService: NotificationService,
     private notesUpdateService: NotesUpdateService,
     private apiService: ApiService,
+    private authService: AuthService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.dataSource = new MatTableDataSource<Note>([]);
@@ -107,19 +110,15 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
     // Load custom subjects and teachers
     this.loadCustomOptions();
 
-    // Subscribe to notes from API service
-    const notesSubscription = this.apiService.notes$.subscribe(notes => {
-      console.log('📥 Received notes from API:', notes.length);
-      this.uploadedNotes = notes as Note[];
-      this.applyFilters();
-    });
+    // Load user's notes directly from API instead of subscribing to all notes
+    this.loadUserNotes();
 
     // Subscribe to notification updates for user feedback
     const notificationSubscription = this.apiService.notificationUpdates$.subscribe(updates => {
       this.handleNotificationUpdates(updates);
     });
 
-    this.subscriptions.push(notesSubscription, notificationSubscription);
+    this.subscriptions.push(notificationSubscription);
     
     this.markNotificationsAsSeen();
     
@@ -140,60 +139,141 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
 
 
   uploadNotes() {
+    // Validate all required fields
+    const notesNameTrimmed = this.notesName?.trim();
+    const subjectTrimmed = this.subject?.trim();
+    const teacherNameTrimmed = this.teacherName?.trim();
+
+    if (!notesNameTrimmed || !subjectTrimmed || !teacherNameTrimmed || !this.selectedFile) {
+      alert('Please fill all required fields (Notes Name, Subject, Teacher Name) and select a file.');
+      return;
+    }
+
+    // Validate field lengths (matching backend validation)
+    if (notesNameTrimmed.length > 200) {
+      alert('Notes Name must be 200 characters or less.');
+      return;
+    }
+    if (subjectTrimmed.length > 100) {
+      alert('Subject must be 100 characters or less.');
+      return;
+    }
+    if (teacherNameTrimmed.length > 100) {
+      alert('Teacher Name must be 100 characters or less.');
+      return;
+    }
+
     // Auto-save custom subject/teacher if not in list
-    if (this.subject && !this.subjects.includes(this.subject)) {
-      this.subjects.push(this.subject);
+    if (subjectTrimmed && !this.subjects.includes(subjectTrimmed)) {
+      this.subjects.push(subjectTrimmed);
       this.saveSubjectsToLocalStorage();
     }
-    if (this.teacherName && !this.teachers.includes(this.teacherName)) {
-      this.teachers.push(this.teacherName);
+    if (teacherNameTrimmed && !this.teachers.includes(teacherNameTrimmed)) {
+      this.teachers.push(teacherNameTrimmed);
       this.saveTeachersToLocalStorage();
     }
 
-    if (this.selectedFile && this.notesName && this.subject && this.teacherName) {
-      // Read file as base64
-      const reader = new FileReader();
-      reader.onload = () => {
-        const noteData = {
-          notesName: this.notesName,
-          subject: this.subject,
-          teacherName: this.teacherName,
-          fileName: this.selectedFile!.name,
-          fileSize: (this.selectedFile!.size / (1024 * 1024)).toFixed(2) + ' MB',
-          fileData: reader.result as string,
-          fileType: this.selectedFile!.type
-        };
-        
-        // Use API service to upload
-        const uploadSubscription = this.apiService.uploadNote(noteData).subscribe({
-          next: (response) => {
-            if (response.success) {
-              console.log(`Notes "${response.data.notesName}" uploaded successfully!`);
-              
-              // Notify same-tab components
-              this.notesUpdateService.notifyUpload(response.data.id, response.data.notesName);
-              
-              // Reset form
-              this.resetForm();
-            }
-          },
-          error: (error) => {
-            console.error('Upload error:', error);
-            alert('Failed to upload notes. Please try again.');
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const currentUser = this.authService.getCurrentUserValue();
+      
+      console.log('📤 Frontend: Preparing note data for upload');
+      console.log('📤 File details:', {
+        name: this.selectedFile!.name,
+        size: this.selectedFile!.size,
+        type: this.selectedFile!.type
+      });
+      
+      const noteData = {
+        notesName: notesNameTrimmed,
+        subject: subjectTrimmed,
+        teacherName: teacherNameTrimmed,
+        description: 'No description provided',
+        fileName: this.selectedFile!.name,
+        fileSize: (this.selectedFile!.size / (1024 * 1024)).toFixed(2) + ' MB',
+        fileData: reader.result as string,
+        fileType: this.selectedFile!.type || 'application/octet-stream',
+        userName: currentUser?.username || 'Unknown User'
+      };
+      
+      console.log('📤 Frontend: Note data prepared:', {
+        notesName: noteData.notesName,
+        subject: noteData.subject,
+        teacherName: noteData.teacherName,
+        fileName: noteData.fileName,
+        fileType: noteData.fileType,
+        hasFileData: !!noteData.fileData
+      });
+      
+      // Use API service to upload
+      const uploadSubscription = this.apiService.uploadNote(noteData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log(`✅ Notes "${response.data.notesName}" uploaded successfully!`);
+            alert(`Notes "${response.data.notesName}" uploaded successfully!`);
+            
+            // Notify same-tab components
+            this.notesUpdateService.notifyUpload(response.data.id, response.data.notesName);
+            
+            // Reload user notes to show the new upload
+            this.loadUserNotes();
+            
+            // Reset form
+            this.resetForm();
           }
-        });
+        },
+        error: (error) => {
+          console.error('❌ Upload error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            message: error.message,
+            error: error.error,
+            url: error.url
+          });
+          
+          let errorMessage = 'Failed to upload notes. ';
+          
+          if (error.status === 400) {
+            // Show detailed validation errors if available
+            if (error.error && typeof error.error === 'object') {
+              console.error('❌ Validation errors:', error.error);
+              errorMessage += 'Validation failed: ';
+              
+              // Extract validation error messages
+              const errors = error.error.errors || error.error;
+              const errorMessages = Object.keys(errors).map(key => {
+                const messages = errors[key];
+                return Array.isArray(messages) ? messages.join(', ') : messages;
+              });
+              
+              errorMessage += errorMessages.join('; ');
+            } else {
+              errorMessage += 'Invalid data. Please check all fields are filled correctly.';
+            }
+          } else if (error.status === 401) {
+            errorMessage += 'Authentication failed. Please login again.';
+          } else if (error.status === 405) {
+            errorMessage += 'Method not allowed. Please check the API endpoint.';
+          } else if (error.status === 500) {
+            errorMessage += 'Server error. Please try again later.';
+          } else {
+            errorMessage += 'Please try again.';
+          }
+          
+          alert(errorMessage);
+        }
+      });
 
-        this.subscriptions.push(uploadSubscription);
-      };
-      
-      reader.onerror = () => {
-        alert('Error reading file. Please try again.');
-      };
-      
-      reader.readAsDataURL(this.selectedFile);
-    } else {
-      alert('Please fill all fields and select a file.');
-    }
+      this.subscriptions.push(uploadSubscription);
+    };
+    
+    reader.onerror = () => {
+      console.error('❌ Error reading file');
+      alert('Error reading file. Please try again.');
+    };
+    
+    reader.readAsDataURL(this.selectedFile);
   }
 
   private resetForm() {
@@ -267,55 +347,56 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
     this.teacherName = '';
   }
 
-  // Save subjects to localStorage (only custom ones)
+  // Removed localStorage functionality for custom subjects
   private saveSubjectsToLocalStorage() {
-    if (isPlatformBrowser(this.platformId)) {
-      const defaultSubjects = [
-        'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science',
-        'English', 'History', 'Geography', 'Economics', 'Business Studies'
-      ];
-      const customSubjects = this.subjects.filter(s => !defaultSubjects.includes(s));
-      localStorage.setItem('customSubjects', JSON.stringify(customSubjects));
-    }
+    // Custom subjects would be saved through API
   }
 
-  // Save teachers to localStorage (only custom ones)
+  // Removed localStorage functionality for custom teachers
   private saveTeachersToLocalStorage() {
-    if (isPlatformBrowser(this.platformId)) {
-      const defaultTeachers = [
-        'Dr. Ahmed Khan', 'Prof. Sarah Ali', 'Mr. Hassan Raza',
-        'Ms. Fatima Malik', 'Dr. Usman Sheikh'
-      ];
-      const customTeachers = this.teachers.filter(t => !defaultTeachers.includes(t));
-      localStorage.setItem('customTeachers', JSON.stringify(customTeachers));
-    }
+    // Custom teachers would be saved through API
   }
 
-  // Load custom subjects and teachers from localStorage
+  // Removed localStorage functionality
   private loadCustomOptions() {
-    if (isPlatformBrowser(this.platformId)) {
-      const savedSubjects = localStorage.getItem('customSubjects');
-      if (savedSubjects) {
-        const customSubjects = JSON.parse(savedSubjects);
-        // Merge with default subjects, avoiding duplicates
-        customSubjects.forEach((subj: string) => {
-          if (!this.subjects.includes(subj)) {
-            this.subjects.push(subj);
-          }
-        });
+    // Custom options would be loaded from API
+  }
+
+  private loadUserNotes() {
+    console.log('📥 Loading user notes from API...');
+    
+    this.apiService.getNotes().subscribe({
+      next: (response) => {
+        console.log('📥 User notes loaded from API:', response);
+        
+        if (response.success && response.data) {
+          // Convert ApiNote to Note format
+          this.uploadedNotes = response.data.map(apiNote => ({
+            id: apiNote.id,
+            notesName: apiNote.notesName,
+            subject: apiNote.subject,
+            teacherName: apiNote.teacherName,
+            fileName: apiNote.fileName,
+            fileSize: apiNote.fileSize,
+            uploadDate: apiNote.uploadDate,
+            status: apiNote.status as 'pending' | 'approved' | 'rejected',
+            fileData: '',
+            fileType: apiNote.fileType,
+            rejectionReason: apiNote.rejectionReason
+          }));
+        } else {
+          this.uploadedNotes = [];
+        }
+        
+        this.applyFilters();
+        console.log('✅ User notes processed:', this.uploadedNotes.length);
+      },
+      error: (error) => {
+        console.error('❌ Error loading user notes:', error);
+        this.uploadedNotes = [];
+        this.applyFilters();
       }
-      
-      const savedTeachers = localStorage.getItem('customTeachers');
-      if (savedTeachers) {
-        const customTeachers = JSON.parse(savedTeachers);
-        // Merge with default teachers, avoiding duplicates
-        customTeachers.forEach((teacher: string) => {
-          if (!this.teachers.includes(teacher)) {
-            this.teachers.push(teacher);
-          }
-        });
-      }
-    }
+    });
   }
 
   handleNotificationUpdates(updates: NotificationUpdate[]) {
@@ -378,22 +459,8 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   markNotificationsAsSeen() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    
-    const savedNotes = localStorage.getItem('uploadedNotes');
-    if (savedNotes) {
-      const notes: Note[] = JSON.parse(savedNotes);
-      const newStatusCheck: { [key: number]: string } = {};
-      
-      notes.forEach(note => {
-        newStatusCheck[note.id] = note.status;
-      });
-      
-      localStorage.setItem('userLastStatusCheck', JSON.stringify(newStatusCheck));
-      
-      // Clear notifications in service
-      this.notificationService.clearUserNotifications();
-    }
+    // Removed localStorage functionality - status tracking would be managed through API
+    this.notificationService.clearUserNotifications();
   }
 
   // Search and filter methods
@@ -479,5 +546,33 @@ export class UploadNotesComponent implements OnInit, OnDestroy, AfterViewInit {
     this.totalItems = this.filteredNotes.length;
     this.pageIndex = 0; // Reset to first page
     this.updatePaginatedNotes();
+  }
+
+  // Format date for display
+  formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      
+      // Format as: Apr 24, 2026 at 3:02 PM
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }) + ' at ' + date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
   }
 }

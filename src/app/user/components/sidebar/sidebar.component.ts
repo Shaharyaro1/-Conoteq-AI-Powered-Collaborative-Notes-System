@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '../../../shared/services/auth.service.new';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,6 +12,11 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrls: ['./sidebar.component.css']
 })
 export class SidebarComponent {
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {}
+
   menuItems = [
     { icon: 'dashboard', label: 'Dashboard', route: '/user/dashboard', hasDivider: true },
     { icon: 'upload_file', label: 'Upload Notes', route: '/user/upload-notes', hasDivider: true },
@@ -35,5 +41,14 @@ export class SidebarComponent {
     if (item.hasDropdown) {
       item.isOpen = !item.isOpen;
     }
+  }
+
+  logout() {
+    console.log('🚪 User Sidebar: Logout clicked');
+    
+    // Use proper auth service logout (it will handle the redirect)
+    this.authService.logout();
+    
+    console.log('🚪 User Sidebar: Logout initiated');
   }
 }

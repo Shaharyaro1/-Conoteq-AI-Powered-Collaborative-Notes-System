@@ -2,10 +2,6 @@
   <!-- Header -->
   <div class="header">
     <h2>User Manager</h2>
-    <button class="btn btn-primary" (click)="openAddUserModal()">
-      <i class="fas fa-plus"></i>
-      Add New User
-    </button>
   </div>
 
   <!-- Filters -->
@@ -38,6 +34,18 @@
     </div>
   </div>
 
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <i class="fas fa-spinner fa-spin"></i>
+    Loading users...
+  </div>
+
   <!-- Users Table -->
   <div class="table-container">
     <table class="users-table">
@@ -58,13 +66,12 @@
           <td>{{ user.username }}</td>
           <td>{{ user.email }}</td>
           <td class="password-cell">
-            <span *ngIf="!user.showPassword" class="password-hidden">••••••••</span>
-            <span *ngIf="user.showPassword" class="password-visible">{{ user.password }}</span>
+            <span class="password-hidden">••••••••</span>
             <button 
               class="btn-icon" 
-              (click)="togglePasswordVisibility(user)"
-              [title]="user.showPassword ? 'Hide Password' : 'Show Password'">
-              <i class="fas" [ngClass]="user.showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+              disabled
+              title="Passwords are encrypted and cannot be displayed">
+              <i class="fas fa-lock"></i>
             </button>
           </td>
           <td>
@@ -135,7 +142,7 @@
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" [(ngModel)]="newUser.password" name="password" class="form-control" required>
+            <input type="password" value="••••••••" name="password" class="form-control" readonly placeholder="New users register through signup page">
           </div>
           <div class="form-group">
             <label>Role</label>
@@ -179,7 +186,7 @@
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" [(ngModel)]="selectedUser.password" name="password" class="form-control" required>
+            <input type="password" value="••••••••" name="password" class="form-control" readonly placeholder="Password cannot be changed">
           </div>
           <div class="form-group">
             <label>Role</label>

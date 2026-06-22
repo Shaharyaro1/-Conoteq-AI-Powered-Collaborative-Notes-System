@@ -1,6 +1,11 @@
 <div class="dashboard">
-  <div class="dashboard-header">
+  <!-- Header -->
+  <div class="header">
     <h1>Dashboard</h1>
+  </div>
+
+  <!-- Search Section -->
+  <div class="search-section">
     <div class="search-bar">
       <div class="search-input-wrapper">
         <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" class="search-icon">
@@ -14,19 +19,12 @@
         </button>
       </div>
     </div>
-    <div class="quick-actions">
-      <button class="btn-quick-action" routerLink="/user/upload-notes">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M.5 9.9a.5.5 0 0 1 .5-.5h3V8.4a.5.5 0 0 1 .146-.354l3-3a.5.5 0 0 1 .708 0l3 3A.5.5 0 0 1 11 8.4v1.1h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-4zM4 10v3h8v-3H4zm1-1h6V8.7L8 5.7 5 8.7V9z" />
+    <div class="teacher-manager-section">
+      <button class="btn-teacher-manager" routerLink="/user/settings">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
         </svg>
-        Upload Note
-      </button>
-      <button class="btn-quick-action btn-secondary" routerLink="/user/ai">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z" />
-          <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z" />
-        </svg>
-        Ask AI
+        Teacher Manager
       </button>
     </div>
   </div>
@@ -35,135 +33,108 @@
   <div class="dashboard-content">
     <!-- Teachers Section -->
     <div class="teachers-section" *ngIf="visibleTeachers.length > 0">
-      <div class="section-header">
-        <h2>
-          <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle; margin-right: 0.5rem;">
-            <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
-          </svg>
-          Our Teachers
-        </h2>
-        <p class="section-subtitle">Click on a teacher card to view their uploaded notes • <a routerLink="/user/settings" style="color: #7c3aed; text-decoration: none; font-weight: 600;">Manage All Teachers →</a></p>
-      </div>
-
       <div class="teachers-grid">
-        <div class="teacher-card-modern" *ngFor="let teacher of visibleTeachers" (click)="viewTeacherNotes(teacher)">
-          <div class="card-background"></div>
-          <div class="card-content">
-            <!-- Avatar with Glow -->
-            <div class="avatar-wrapper">
-              <div class="avatar-glow"></div>
-              <img [src]="getTeacherAvatar(teacher)" [alt]="teacher.name" (error)="onImageError($event, teacher)" class="teacher-avatar-modern">
-              <div class="avatar-badge">
-                <mat-icon>verified</mat-icon>
-              </div>
-            </div>
-            
-            <!-- Teacher Info -->
-            <div class="teacher-info-modern">
-              <h3 class="teacher-name-modern">{{teacher.name}}</h3>
-              <p class="teacher-subject-modern">{{teacher.subject}}</p>
-            </div>
-            
-            <!-- Details Grid -->
-            <div class="details-grid">
-              <div class="detail-item">
-                <mat-icon>school</mat-icon>
-                <span>{{teacher.qualification}}</span>
-              </div>
-              <div class="detail-item">
-                <mat-icon>email</mat-icon>
-                <span>{{teacher.email}}</span>
-              </div>
-            </div>
-            
-            <!-- Action Button -->
-            <button mat-raised-button class="view-notes-modern" (click)="viewTeacherNotes(teacher); $event.stopPropagation()">
-              <mat-icon>auto_stories</mat-icon>
-              View Notes
-            </button>
+        <div class="teacher-card" *ngFor="let teacher of visibleTeachers; let i = index" (click)="viewTeacherNotes(teacher)">
+          <!-- Profile Image -->
+          <div class="teacher-image">
+            <img [src]="getTeacherAvatar(teacher)" [alt]="teacher.name" (error)="onImageError($event, teacher)">
           </div>
+          
+          <!-- Teacher Name -->
+          <h3 class="teacher-name">{{teacher.name}}</h3>
+          
+          <!-- Subject and Qualification -->
+          <div class="teacher-details">
+            <p class="teacher-subject">{{teacher.subject}}</p>
+            <p class="teacher-qualification">{{teacher.qualification}}</p>
+          </div>
+          
+          <!-- View Notes Button -->
+          <button class="view-notes-btn" (click)="viewTeacherNotes(teacher); $event.stopPropagation()">
+            View Notes
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-<!-- Te
-acher Notes Modal -->
-<div class="modal-overlay" *ngIf="showTeacherNotesModal" (click)="closeTeacherNotesModal()">
-  <div class="modal-content teacher-notes-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <div class="teacher-modal-info">
-        <img [src]="getTeacherAvatar(selectedTeacher!)" [alt]="selectedTeacher?.name" class="teacher-modal-avatar" (error)="onImageError($event, selectedTeacher!)">
-        <div>
-          <h2>{{selectedTeacher?.name}}'s Notes</h2>
-          <p class="teacher-modal-subtitle">{{selectedTeacher?.subject}} | {{selectedTeacher?.qualification}}</p>
-        </div>
-      </div>
-      <button class="close-btn" (click)="closeTeacherNotesModal()">
-        <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <div *ngIf="getTeacherNotesForSelected().length === 0" class="no-notes">
-        <svg width="64" height="64" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.3;">
-          <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
-          <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
-        </svg>
-        <h3>No Notes Available</h3>
-        <p>This teacher hasn't uploaded any notes yet.</p>
-      </div>
-
-      <div class="notes-list" *ngIf="getTeacherNotesForSelected().length > 0">
-        <div class="note-item" *ngFor="let note of getTeacherNotesForSelected()">
-          <div class="note-icon">
-            <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-            </svg>
+  <!-- Teacher Notes Modal -->
+  <div class="modal-overlay" *ngIf="showTeacherNotesModal" (click)="closeTeacherNotesModal()">
+    <div class="modal-content teacher-notes-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="teacher-modal-info">
+          <img [src]="getTeacherAvatar(selectedTeacher!)" [alt]="selectedTeacher?.name" class="teacher-modal-avatar" (error)="onImageError($event, selectedTeacher!)">
+          <div>
+            <h2>{{selectedTeacher?.name}}'s Notes</h2>
+            <p class="teacher-modal-subtitle">{{selectedTeacher?.subject}} | {{selectedTeacher?.qualification}}</p>
           </div>
-          <div class="note-details">
-            <h4>{{note.title}}</h4>
-            <p class="note-chapter">Chapter: {{note.chapter || 'N/A'}}</p>
-            <div class="note-meta">
-              <span>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+        </div>
+        <button class="close-btn" (click)="closeTeacherNotesModal()">
+          <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="getTeacherNotesForSelected().length === 0" class="no-notes">
+          <svg width="64" height="64" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.3;">
+            <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
+            <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+          </svg>
+          <h3>No Notes Available</h3>
+          <p>This teacher hasn't uploaded any notes yet.</p>
+        </div>
+
+        <div class="notes-list" *ngIf="getTeacherNotesForSelected().length > 0">
+          <div class="note-item" *ngFor="let note of getTeacherNotesForSelected()">
+            <div class="note-icon">
+              <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+              </svg>
+            </div>
+            <div class="note-details">
+              <h4>{{note.title}}</h4>
+              <p class="note-chapter">Chapter: {{note.chapter || 'N/A'}}</p>
+              <div class="note-meta">
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                  </svg>
+                  {{note.fileName}}
+                </span>
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                  </svg>
+                  {{formatDate(note.uploadDate)}}
+                </span>
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                  </svg>
+                  {{note.fileSize}}
+                </span>
+              </div>
+            </div>
+            <div class="note-actions">
+              <button class="btn-action btn-view" (click)="viewTeacherNote(note)" title="View Note">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                 </svg>
-                {{note.fileName}}
-              </span>
-              <span>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                  <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-                </svg>
-                {{note.uploadDate}}
-              </span>
-              <span>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                View
+              </button>
+              <button class="btn-action btn-download" (click)="downloadTeacherNote(note)" title="Download Note">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                   <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
                 </svg>
-                {{note.fileSize}}
-              </span>
+                Download
+              </button>
             </div>
-          </div>
-          <div class="note-actions">
-            <button class="btn-action btn-view" (click)="viewTeacherNote(note)" title="View Note">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-              </svg>
-              View
-            </button>
-            <button class="btn-action btn-download" (click)="downloadTeacherNote(note)" title="Download Note">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-              </svg>
-              Download
-            </button>
           </div>
         </div>
       </div>

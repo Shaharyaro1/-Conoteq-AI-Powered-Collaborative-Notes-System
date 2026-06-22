@@ -2,42 +2,29 @@ import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DataService } from '../../../shared/services/data.service';
-import { Subscription } from 'rxjs';
+import { TeachersService } from '../../../shared/services/teachers.service';
+import { AuthService } from '../../../shared/services/auth.service.new';
+import { UserPreferencesService } from '../../../shared/services/user-preferences.service';
 
 // Angular Material Imports
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatBadgeModule } from '@angular/material/badge';
-
-interface Note {
-  id: number;
-  notesName: string;
-  subject: string;
-  teacherName: string;
-  fileName: string;
-  fileSize: string;
-  uploadDate: string;
-  status: 'pending' | 'approved' | 'rejected';
-  fileData?: string;
-  fileType?: string;
-  // Legacy support
-  teacherId?: number;
-  title?: string;
-  chapter?: string;
-}
 
 interface Teacher {
   id?: number;
   name: string;
-  qualification: string;
+  qualification?: string;
   subject: string;
   email: string;
-  profileImage: string;
+  phone?: string;
+  bio?: string;
+  profileImage?: string;
+  isActive?: boolean;
+  isVisible?: boolean;
+  createdAt?: string;
+  notesCount?: number;
 }
 
 interface TeacherNote {
@@ -62,252 +49,94 @@ interface TeacherNote {
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatBadgeModule
+    MatChipsModule
   ],
   templateUrl: './user-dashboard.component.html',
   styleUrls: ['./user-dashboard.component.css']
 })
 export class UserDashboardComponent implements OnInit, OnDestroy {
-  stats = [
-    { title: 'Total Notes', value: '0', icon: 'notes' },
-    { title: 'AI Queries', value: '0', icon: 'ai' },
-    { title: 'Storage Used', value: '0 MB', icon: 'storage' }
-  ];
-
-  recentNotes: Note[] = [];
-  filteredNotes: Note[] = [];
-  searchQuery: string = '';
-  private notesSubscription?: Subscription;
-  isLoading: boolean = true;
-
   // Teacher data
   teachers: Teacher[] = [];
-  visibleTeachers: Teacher[] = []; // Only 4-5 teachers for dashboard
+  visibleTeachers: Teacher[] = [];
   teacherNotes: TeacherNote[] = [];
   selectedTeacher: Teacher | null = null;
   showTeacherNotesModal: boolean = false;
+  
+  // Search functionality (kept for future use)
+  searchQuery: string = '';
+  isLoading: boolean = true;
+
+  // New user dashboard settings - REMOVED RESTRICTIONS
+  minimumTeachersToShow: number = 0; // No minimum requirement
+  isNewUser: boolean = false;
 
   constructor(
-    private dataService: DataService,
+    private teachersService: TeachersService,
+    private authService: AuthService,
+    private userPreferencesService: UserPreferencesService,
     private router: Router,
-    private dialog: MatDialog,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
-    this.loadNotes();
-    this.loadStats();
+    console.log('🚀 UserDashboard: Component initializing...');
+    
+    // Verify user is authenticated
+    if (!this.authService.hasToken()) {
+      console.warn('⚠️ No auth token found, redirecting to login');
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+    
+    // Clear any stale localStorage data that might be from previous user
+    this.clearStaleUserData();
+    
+    // Load teachers data only
     this.loadTeachers();
-    this.loadTeacherNotes();
     this.setupStorageListener();
+  }
+  
+  // Clear stale user-specific data on component init
+  private clearStaleUserData() {
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('🧹 Checking for stale user data...');
+      
+      // Check if hiddenTeacherIds exists but might be from previous session
+      const hiddenIds = localStorage.getItem('hiddenTeacherIds');
+      if (hiddenIds) {
+        console.log('📋 Found existing hiddenTeacherIds, will validate against current user');
+        // Note: The actual validation happens when we load teachers
+        // This is just for logging purposes
+      }
+    }
   }
 
   ngOnDestroy() {
-    if (this.notesSubscription) {
-      this.notesSubscription.unsubscribe();
-    }
-    // Remove storage listener
+    // Remove event listener
     if (isPlatformBrowser(this.platformId)) {
-      window.removeEventListener('storage', this.handleStorageChange);
+      window.removeEventListener('teacherVisibilityChanged', this.handleVisibilityChange as EventListener);
     }
   }
 
   private setupStorageListener() {
     if (isPlatformBrowser(this.platformId)) {
-      // Listen for teacher visibility changes
-      window.addEventListener('storage', this.handleStorageChange);
+      // Listen for teacher visibility changes from settings page
+      window.addEventListener('teacherVisibilityChanged', this.handleVisibilityChange as EventListener);
+      console.log('👂 Listening for teacher visibility changes');
     }
   }
 
-  private handleStorageChange = (e: StorageEvent) => {
-    console.log('Storage event received:', e.key, e.newValue);
-    if (e.key === 'teacherVisibility') {
-      console.log('Teacher visibility changed, reloading...');
-      // Reload teachers when visibility changes
-      this.loadTeachers();
-      // Show notification
-      this.showToast('Teacher visibility updated!', 'success');
-    }
-  }
-
-  loadNotes() {
-    this.isLoading = true;
-    
-    if (isPlatformBrowser(this.platformId)) {
-      // Load from localStorage (same as upload-notes component)
-      const savedNotes = localStorage.getItem('uploadedNotes');
-      if (savedNotes) {
-        const notes: Note[] = JSON.parse(savedNotes);
-        this.recentNotes = notes.sort((a, b) => 
-          new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
-        );
-      } else {
-        this.recentNotes = [];
-      }
-      
-      this.filteredNotes = this.recentNotes;
-      this.isLoading = false;
-      this.updateStats();
-      
-      // Listen for storage changes (when notes are uploaded)
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'uploadedNotes') {
-          this.loadNotesFromStorage();
-        }
-      });
-    } else {
-      // Fallback for SSR
-      this.recentNotes = [];
-      this.filteredNotes = [];
-      this.isLoading = false;
-    }
-  }
-
-  private loadNotesFromStorage() {
-    if (isPlatformBrowser(this.platformId)) {
-      const savedNotes = localStorage.getItem('uploadedNotes');
-      if (savedNotes) {
-        const notes: Note[] = JSON.parse(savedNotes);
-        this.recentNotes = notes.sort((a, b) => 
-          new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
-        );
-      } else {
-        this.recentNotes = [];
-      }
-      this.filteredNotes = this.recentNotes;
-      this.updateStats();
-      this.onSearch(); // Re-apply search filter
-    }
-  }
-
-  loadStats() {
-    if (isPlatformBrowser(this.platformId)) {
-      const aiQueries = localStorage.getItem('aiQueriesCount') || '0';
-      this.stats[1].value = aiQueries;
-    }
-  }
-
-  updateStats() {
-    // Update total notes count
-    this.stats[0].value = this.recentNotes.length.toString();
-
-    // Calculate total storage used
-    const totalBytes = this.recentNotes.reduce((sum, note) => {
-      const sizeMatch = note.fileSize.match(/(\d+\.?\d*)\s*(KB|MB|GB)/i);
-      if (sizeMatch) {
-        const size = parseFloat(sizeMatch[1]);
-        const unit = sizeMatch[2].toUpperCase();
-        
-        let bytes = size;
-        if (unit === 'KB') bytes *= 1024;
-        else if (unit === 'MB') bytes *= 1024 * 1024;
-        else if (unit === 'GB') bytes *= 1024 * 1024 * 1024;
-        
-        return sum + bytes;
-      }
-      return sum;
-    }, 0);
-
-    // Convert to appropriate unit
-    if (totalBytes < 1024) {
-      this.stats[2].value = `${totalBytes.toFixed(2)} B`;
-    } else if (totalBytes < 1024 * 1024) {
-      this.stats[2].value = `${(totalBytes / 1024).toFixed(2)} KB`;
-    } else if (totalBytes < 1024 * 1024 * 1024) {
-      this.stats[2].value = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
-    } else {
-      this.stats[2].value = `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-    }
+  private handleVisibilityChange = (e: CustomEvent) => {
+    console.log('📢 Teacher visibility changed event received:', e.detail);
+    // Reload teachers when visibility changes
+    this.loadTeachers();
+    // Show notification in console instead of toast
+    console.log('✅ Teacher visibility updated on dashboard!');
   }
 
   onSearch() {
-    if (!this.searchQuery.trim()) {
-      this.filteredNotes = this.recentNotes;
-      return;
-    }
-    
-    const query = this.searchQuery.toLowerCase();
-    this.filteredNotes = this.recentNotes.filter(note => 
-      // Support both new and legacy note formats
-      (note.notesName || note.title || '')?.toLowerCase().includes(query) ||
-      (note.subject || note.chapter || '')?.toLowerCase().includes(query) ||
-      note.fileName?.toLowerCase().includes(query) ||
-      note.teacherName?.toLowerCase().includes(query)
-    );
-  }
-
-  viewNote(note: Note) {
-    if (isPlatformBrowser(this.platformId)) {
-      // Store selected note in session storage
-      sessionStorage.setItem('selectedNote', JSON.stringify(note));
-      
-      // Open note in new window or navigate
-      if (note.fileType === 'application/pdf') {
-        if (!note.fileData || !note.fileType) {
-          this.showToast('File data is not available for viewing', 'error');
-          return;
-        }
-        const blob = this.base64ToBlob(note.fileData, note.fileType);
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      } else {
-        alert('Note viewer coming soon!');
-      }
-    }
-  }
-
-  downloadNote(note: Note) {
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        if (!note.fileData || !note.fileType) {
-          this.showToast('File data is not available for download', 'error');
-          return;
-        }
-        const blob = this.base64ToBlob(note.fileData, note.fileType);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = note.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        this.showToast('Note downloaded successfully!', 'success');
-      } catch (error) {
-        console.error('Download error:', error);
-        this.showToast('Failed to download note', 'error');
-      }
-    }
-  }
-
-  deleteNote(note: Note) {
-    const noteName = note.notesName || note.title || 'this note';
-    if (confirm(`Are you sure you want to delete "${noteName}"?`)) {
-      if (isPlatformBrowser(this.platformId)) {
-        const savedNotes = localStorage.getItem('uploadedNotes');
-        if (savedNotes) {
-          const notes: Note[] = JSON.parse(savedNotes);
-          const updatedNotes = notes.filter(n => n.id !== note.id);
-          localStorage.setItem('uploadedNotes', JSON.stringify(updatedNotes));
-          this.loadNotesFromStorage();
-          this.showToast('Note deleted successfully!', 'success');
-        }
-      }
-    }
-  }
-
-  private base64ToBlob(base64: string, contentType: string): Blob {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: contentType });
+    // Search functionality placeholder - can be implemented later if needed
+    console.log('Search query:', this.searchQuery);
   }
 
   private showToast(message: string, type: 'success' | 'error') {
@@ -354,65 +183,133 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Teacher methods
+  // Teacher methods - RESPECTS HIDE/SHOW SETTINGS
   loadTeachers() {
-    if (isPlatformBrowser(this.platformId)) {
-      const savedTeachers = localStorage.getItem('teachers');
-      if (savedTeachers) {
-        this.teachers = JSON.parse(savedTeachers);
+    console.log('👥 Loading teachers from API...');
+    
+    // First, fetch user preferences from API to ensure we have current user's data
+    this.userPreferencesService.getUserPreferences().subscribe({
+      next: (preferences) => {
+        console.log('✅ Loaded user preferences:', preferences);
         
-        // Initialize default visibility (first time only)
-        this.initializeDefaultVisibility();
+        // Now load teachers with the correct hidden IDs
+        this.teachersService.getTeachers(undefined, true).subscribe({
+          next: (teachers) => {
+            console.log('✅ Loaded all active teachers from API:', teachers.length);
+            
+            // Check if this is a new user (no preferences set yet)
+            const isNewUser = !preferences.id || preferences.hiddenTeacherIds.length === 0;
+            
+            if (isNewUser && teachers.length > 3) {
+              console.log('🆕 New user detected! Initializing with first 3 teachers visible...');
+              
+              // Hide all teachers except first 3
+              const teachersToHide = teachers.slice(3).map(t => t.id!);
+              console.log('🔒 Hiding teachers:', teachersToHide);
+              
+              // Save preferences for new user
+              this.userPreferencesService.updateUserPreferences(teachersToHide).subscribe({
+                next: (updatedPrefs) => {
+                  console.log('✅ New user preferences saved:', updatedPrefs);
+                  this.applyTeacherVisibility(teachers, updatedPrefs.hiddenTeacherIds);
+                },
+                error: (error) => {
+                  console.error('❌ Error saving new user preferences:', error);
+                  // Fallback: show all teachers
+                  this.applyTeacherVisibility(teachers, []);
+                }
+              });
+            } else {
+              // Existing user or user with preferences
+              const hiddenIds = preferences.hiddenTeacherIds || [];
+              console.log('🔍 Hidden teacher IDs for current user:', hiddenIds);
+              this.applyTeacherVisibility(teachers, hiddenIds);
+            }
+          },
+          error: (error) => {
+            console.error('❌ Error loading teachers:', error);
+            this.isLoading = false;
+          }
+        });
+      },
+      error: (error) => {
+        console.error('❌ Error loading user preferences:', error);
         
-        // Load teacher visibility settings
-        const visibilitySettings = localStorage.getItem('teacherVisibility');
-        let hiddenTeacherIds: number[] = [];
-        
-        if (visibilitySettings) {
-          hiddenTeacherIds = JSON.parse(visibilitySettings);
-        }
-        
-        console.log('📊 Total teachers:', this.teachers.length);
-        console.log('🚫 Hidden teacher IDs:', hiddenTeacherIds);
-        
-        // Filter visible teachers (not hidden) - NO LIMIT!
-        this.visibleTeachers = this.teachers
-          .filter(teacher => !hiddenTeacherIds.includes(teacher.id || 0));
-        
-        console.log('✅ Visible teachers:', this.visibleTeachers.length);
-        console.log('👥 Showing on dashboard:', this.visibleTeachers.length, '(no limit)');
+        // Fallback: load teachers without filtering
+        this.teachersService.getTeachers(undefined, true).subscribe({
+          next: (teachers) => {
+            console.log('✅ Loaded teachers (no filtering due to preferences error):', teachers.length);
+            this.teachers = teachers;
+            this.visibleTeachers = teachers;
+            this.isLoading = false;
+          },
+          error: (error) => {
+            console.error('❌ Error loading teachers:', error);
+            this.isLoading = false;
+          }
+        });
       }
-    }
+    });
+  }
+  
+  // Helper method to apply teacher visibility filtering
+  private applyTeacherVisibility(teachers: Teacher[], hiddenIds: number[]) {
+    // Filter out hidden teachers
+    const visibleTeachers = teachers.filter(teacher => 
+      !hiddenIds.includes(teacher.id || 0)
+    );
+    
+    console.log(`🔓 Showing ${visibleTeachers.length} visible teachers out of ${teachers.length} total`);
+    console.log('👥 Visible teachers:', visibleTeachers.map(t => t.name));
+    
+    this.teachers = teachers; // Keep all teachers for reference
+    this.visibleTeachers = visibleTeachers; // Show only visible ones
+    
+    this.isLoading = false;
   }
 
-  // Initialize default visibility - show only 3-4 teachers initially
-  private initializeDefaultVisibility() {
-    if (isPlatformBrowser(this.platformId)) {
-      const visibilitySettings = localStorage.getItem('teacherVisibility');
-      const isInitialized = localStorage.getItem('teacherVisibilityInitialized');
+  // Get hidden teacher IDs from user preferences
+  private async getHiddenTeacherIds(): Promise<number[]> {
+    return new Promise((resolve) => {
+      // IMPORTANT: Always fetch from API first to get user-specific preferences
+      // This ensures each user sees their own hidden teachers, not previous user's
       
-      // Only initialize if not done before
-      if (!isInitialized && this.teachers.length > 4) {
-        console.log('🎯 First time initialization: Showing only first 4 teachers');
-        
-        // Hide all teachers after the first 4
-        const teachersToHide = this.teachers.slice(4).map(t => t.id).filter(id => id !== undefined) as number[];
-        
-        localStorage.setItem('teacherVisibility', JSON.stringify(teachersToHide));
-        localStorage.setItem('teacherVisibilityInitialized', 'true');
-        
-        console.log('✅ Initialized with 4 visible teachers, hidden:', teachersToHide);
+      if (!isPlatformBrowser(this.platformId)) {
+        resolve([]);
+        return;
       }
-    }
+      
+      // Check if we have a valid auth token
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.log('⚠️ No auth token found, showing all teachers');
+        resolve([]);
+        return;
+      }
+      
+      // Try to get from localStorage first (for immediate response)
+      const stored = localStorage.getItem('hiddenTeacherIds');
+      if (stored) {
+        try {
+          const hiddenIds = JSON.parse(stored);
+          console.log('📋 Found hidden teacher IDs in localStorage:', hiddenIds);
+          resolve(hiddenIds);
+          return;
+        } catch (e) {
+          console.warn('⚠️ Failed to parse stored hidden teacher IDs');
+        }
+      }
+      
+      // Fallback: no hidden teachers
+      console.log('📋 No hidden teacher preferences found, showing all teachers');
+      resolve([]);
+    });
   }
 
   loadTeacherNotes() {
-    if (isPlatformBrowser(this.platformId)) {
-      const savedNotes = localStorage.getItem('teacherNotes');
-      if (savedNotes) {
-        this.teacherNotes = JSON.parse(savedNotes);
-      }
-    }
+    // Teacher notes are loaded when viewing specific teacher
+    // This method is kept for compatibility but doesn't need to load all notes upfront
+    console.log('📝 Teacher notes will be loaded on demand');
   }
 
   getTeacherAvatar(teacher: Teacher): string {
@@ -505,5 +402,15 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
         this.showToast('Failed to download note', 'error');
       }
     }
+  }
+
+  private base64ToBlob(base64: string, contentType: string): Blob {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
   }
 }

@@ -1,87 +1,29 @@
 <nav class="navbar">
   <div class="navbar-left">
     <div class="logo">
-      <span>MyApp</span>
+      <span>CONOTEQ</span>
     </div>
   </div>
   
   <div class="navbar-right">
     <!-- Notification Bell -->
     <div class="notification-container">
-      <div class="notification-bell" (click)="toggleNotifications()" title="Notes Status Updates">
+      <div class="notification-bell" 
+           (click)="onNotificationBellClick()" 
+           title="View Notes Status Updates"
+           [class.has-notifications]="statusUpdatesCount > 0">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
           <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"/>
         </svg>
-        <span class="notification-badge" 
-              [ngClass]="getNotificationBadgeClass()" 
-              *ngIf="getTotalNotifications() > 0">{{ getTotalNotifications() }}</span>
-      </div>
-
-      <!-- Notification Dropdown -->
-      <div class="notification-dropdown" *ngIf="showNotifications">
-        <div class="notification-header">
-          <h3>Notifications ({{ getTotalNotifications() }})</h3>
-          <button class="btn-clear-all" (click)="clearAllNotifications()" *ngIf="notifications.length > 0">
-            Clear All
-          </button>
-        </div>
-        
-        <!-- Quick Stats -->
-        <div class="notification-quick-stats" *ngIf="statusUpdatesCount > 0">
-          <div class="quick-stat approved" *ngIf="approvedCount > 0">
-            <span class="stat-icon">✅</span>
-            <span class="stat-text">{{ approvedCount }} Approved</span>
-          </div>
-          <div class="quick-stat rejected" *ngIf="rejectedCount > 0">
-            <span class="stat-icon">❌</span>
-            <span class="stat-text">{{ rejectedCount }} Rejected</span>
-          </div>
-        </div>
-        
-        <div class="notification-list" *ngIf="notifications.length > 0">
-          <div class="notification-item" 
-               *ngFor="let notification of notifications" 
-               [ngClass]="getNotificationClass(notification.type)">
-            <div class="notification-icon">
-              <svg *ngIf="notification.type === 'approved'" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-              </svg>
-              <svg *ngIf="notification.type === 'rejected'" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-              </svg>
-            </div>
-            <div class="notification-content">
-              <div class="notification-title">{{ notification.title }}</div>
-              <div class="notification-message">{{ notification.message }}</div>
-              <div class="notification-time">{{ notification.time }}</div>
-            </div>
-            <button class="btn-dismiss" (click)="dismissNotification(notification.id)">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="notification-empty" *ngIf="notifications.length === 0">
-          <div class="empty-icon">
-            <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"/>
-            </svg>
-          </div>
-          <p>No new notifications</p>
-        </div>
-
-        <div class="notification-footer">
-          <button class="btn-view-all" [routerLink]="['/user/upload-notes']" (click)="closeNotifications()">
-            View All Notes
-          </button>
-        </div>
+        <!-- Red badge with count -->
+        <span class="notification-badge-count" *ngIf="statusUpdatesCount > 0">
+          {{ statusUpdatesCount }}
+        </span>
       </div>
     </div>
 
-    <!-- Backdrop for dropdown -->
-    <div class="dropdown-backdrop" *ngIf="showDropdown" (click)="closeDropdown()"></div>
+    <!-- Backdrop for dropdowns -->
+    <div class="dropdown-backdrop" *ngIf="showDropdown || showNotifications" (click)="closeAllDropdowns()"></div>
     
     <div class="user-menu" (click)="toggleDropdown()">
       <div class="user-circle">{{ userInitial }}</div>

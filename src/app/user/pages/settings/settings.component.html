@@ -1,158 +1,137 @@
 <div class="settings-container">
-  <div class="settings-header">
-    <div class="header-content">
-      <h1>
-        <mat-icon>settings</mat-icon>
-        Teacher Management
-      </h1>
-      <p class="subtitle">Manage teacher visibility on your dashboard</p>
+  <!-- Header -->
+  <div class="header">
+    <h1>Teacher Management</h1>
+    <p class="header-subtitle">
+      Customize which teachers appear on your dashboard. 
+      <strong>Minimum 4 teachers must remain visible.</strong>
+      Currently showing: <span class="visible-count">{{getVisibleTeachersCount()}}</span> teachers
+    </p>
+  </div>
+
+  <!-- Search Section -->
+  <div class="search-section">
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" class="search-icon">
+          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+        </svg>
+        <input type="text" placeholder="Search teachers by name, subject, or qualification..." (keyup)="applyFilter($event)" class="search-input" #input>
+        <button *ngIf="input.value" (click)="input.value = ''; applyFilter($event)" class="clear-search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
-  <mat-card class="teachers-card">
-    <mat-card-content>
-      <!-- Search Bar -->
-      <div class="search-section">
-        <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Search Teachers</mat-label>
-          <input matInput (keyup)="applyFilter($event)" placeholder="Search by name, subject, email..." #input>
-          <mat-icon matPrefix>search</mat-icon>
-        </mat-form-field>
-        
-        <div class="stats">
-          <div class="stat-item">
-            <mat-icon>people</mat-icon>
-            <span>Total: {{teachers.length}}</span>
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading teachers...</p>
+  </div>
+
+  <!-- Teachers Table -->
+  <div class="teachers-table-container" *ngIf="!isLoading && teachers.length > 0">
+    <table mat-table [dataSource]="dataSource.filteredData" class="teachers-table">
+      
+      <!-- Profile Column -->
+      <ng-container matColumnDef="profile">
+        <th mat-header-cell *matHeaderCellDef>Profile</th>
+        <td mat-cell *matCellDef="let teacher">
+          <div class="teacher-profile-cell">
+            <img [src]="getTeacherAvatar(teacher)" 
+                 [alt]="teacher.name" 
+                 (error)="onImageError($event, teacher)"
+                 class="teacher-avatar-table">
           </div>
-          <div class="stat-item visible">
-            <mat-icon>visibility</mat-icon>
-            <span>Visible: {{teachers.length - hiddenTeacherIds.length}}</span>
+        </td>
+      </ng-container>
+
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let teacher">
+          <strong class="teacher-name-table">{{teacher.name}}</strong>
+        </td>
+      </ng-container>
+
+      <!-- Qualification Column -->
+      <ng-container matColumnDef="qualification">
+        <th mat-header-cell *matHeaderCellDef>Qualification</th>
+        <td mat-cell *matCellDef="let teacher">
+          <span class="qualification-badge">{{teacher.qualification || 'N/A'}}</span>
+        </td>
+      </ng-container>
+
+      <!-- Subject Column -->
+      <ng-container matColumnDef="subject">
+        <th mat-header-cell *matHeaderCellDef>Subject</th>
+        <td mat-cell *matCellDef="let teacher">
+          <mat-chip class="subject-chip-table">{{teacher.subject}}</mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Email Column -->
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef>Email</th>
+        <td mat-cell *matCellDef="let teacher">
+          <span class="email-text">{{teacher.email}}</span>
+        </td>
+      </ng-container>
+
+      <!-- Visibility Column -->
+      <ng-container matColumnDef="visibility">
+        <th mat-header-cell *matHeaderCellDef>Dashboard Visibility</th>
+        <td mat-cell *matCellDef="let teacher">
+          <div class="visibility-control">
+            <mat-slide-toggle 
+              [checked]="!teacher.isHidden" 
+              [disabled]="!canHideTeacher(teacher)"
+              (change)="toggleVisibility(teacher)"
+              color="primary">
+              {{teacher.isHidden ? 'Hidden' : 'Visible'}}
+            </mat-slide-toggle>
+            <span *ngIf="!canHideTeacher(teacher) && !teacher.isHidden" 
+                  class="minimum-constraint-note"
+                  matTooltip="Cannot hide - minimum 4 teachers required">
+              <mat-icon class="constraint-icon">lock</mat-icon>
+            </span>
           </div>
-          <div class="stat-item hidden">
-            <mat-icon>visibility_off</mat-icon>
-            <span>Hidden: {{hiddenTeacherIds.length}}</span>
-          </div>
-          <div class="stat-item dashboard">
-            <mat-icon>dashboard</mat-icon>
-            <span>On Dashboard: {{teachers.length - hiddenTeacherIds.length}}</span>
-          </div>
-        </div>
-      </div>
+        </td>
+      </ng-container>
 
-      <!-- Table -->
-      <div class="table-container">
-        <table mat-table [dataSource]="dataSource" matSort class="teachers-table">
-          
-          <!-- Profile Image Column -->
-          <ng-container matColumnDef="profileImage">
-            <th mat-header-cell *matHeaderCellDef>Photo</th>
-            <td mat-cell *matCellDef="let teacher">
-              <img [src]="getTeacherAvatar(teacher)" 
-                   [alt]="teacher.name" 
-                   (error)="onImageError($event, teacher)"
-                   class="teacher-avatar">
-            </td>
-          </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+          [class.hidden-row]="row.isHidden"></tr>
+    </table>
 
-          <!-- Name Column -->
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
-            <td mat-cell *matCellDef="let teacher">
-              <div class="teacher-name">{{teacher.name}}</div>
-            </td>
-          </ng-container>
+    <!-- Paginator -->
+    <mat-paginator 
+      [length]="totalItems"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      [pageIndex]="pageIndex"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+      class="teachers-paginator">
+    </mat-paginator>
+  </div>
 
-          <!-- Subject Column -->
-          <ng-container matColumnDef="subject">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Subject</th>
-            <td mat-cell *matCellDef="let teacher">
-              <mat-chip class="subject-chip">{{teacher.subject}}</mat-chip>
-            </td>
-          </ng-container>
+  <!-- No Teachers Message -->
+  <div class="no-teachers" *ngIf="!isLoading && teachers.length === 0">
+    <mat-icon>people_outline</mat-icon>
+    <h3>No Teachers Found</h3>
+    <p>No teachers have been added yet. Check browser console (F12) for API errors.</p>
+    <p style="color: #6c757d; font-size: 12px;">Debug: teachers.length = {{teachers.length}}, totalItems = {{totalItems}}</p>
+  </div>
 
-          <!-- Qualification Column -->
-          <ng-container matColumnDef="qualification">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Qualification</th>
-            <td mat-cell *matCellDef="let teacher">{{teacher.qualification}}</td>
-          </ng-container>
+  <!-- No Search Results -->
+  <div class="no-search-results" *ngIf="!isLoading && teachers.length > 0 && dataSource.filteredData.length === 0">
+    <mat-icon>search_off</mat-icon>
+    <h3>No Results Found</h3>
+    <p>No teachers match your search criteria. Try adjusting your search terms.</p>
+  </div>
 
-          <!-- Email Column -->
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
-            <td mat-cell *matCellDef="let teacher">
-              <div class="email-cell">
-                <mat-icon>email</mat-icon>
-                {{teacher.email}}
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Status Column -->
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let teacher">
-              <mat-chip [class.status-visible]="!teacher.isHidden" 
-                        [class.status-hidden]="teacher.isHidden">
-                <mat-icon>{{teacher.isHidden ? 'visibility_off' : 'visibility'}}</mat-icon>
-                {{teacher.isHidden ? 'Hidden' : 'Visible'}}
-              </mat-chip>
-            </td>
-          </ng-container>
-
-          <!-- Actions Column -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let teacher">
-              <button mat-raised-button 
-                      [color]="teacher.isHidden ? 'primary' : 'warn'"
-                      (click)="toggleVisibility(teacher)"
-                      class="action-btn">
-                <mat-icon>{{teacher.isHidden ? 'visibility' : 'visibility_off'}}</mat-icon>
-                {{teacher.isHidden ? 'Show' : 'Hide'}}
-              </button>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
-
-          <!-- No Data Row -->
-          <tr class="mat-row" *matNoDataRow>
-            <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
-              <div class="no-data-content">
-                <mat-icon>search_off</mat-icon>
-                <p>No teachers found matching "{{input.value}}"</p>
-              </div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Paginator -->
-      <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" 
-                     [pageSize]="10"
-                     showFirstLastButtons
-                     class="teachers-paginator">
-      </mat-paginator>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Info Card -->
-  <mat-card class="info-card">
-    <mat-card-content>
-      <div class="info-content">
-        <mat-icon>info</mat-icon>
-        <div>
-          <h3>How it works</h3>
-          <ul>
-            <li>Dashboard shows <strong>all visible teachers</strong> (no limit)</li>
-            <li>Use <strong>Hide</strong> to remove teachers from dashboard</li>
-            <li>Use <strong>Show</strong> to add teachers to dashboard</li>
-            <li>You can show as many teachers as you want (10, 20, 100+)</li>
-            <li>Changes are saved automatically and update in real-time</li>
-          </ul>
-        </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
 </div>
